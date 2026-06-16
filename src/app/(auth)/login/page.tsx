@@ -1,0 +1,87 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { loginWithEmail, loginWithGoogle } from '@/lib/auth/service';
+import { loginSchema } from '@/lib/validators/auth';
+
+export default function LoginPage() {
+  const router = useRouter();
+  const params = useSearchParams();
+  const redirect = params.get('redirect') ?? '/dashboard';
+  const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = new FormData(e.currentTarget);
+    const parsed = loginSchema.safeParse({ email: form.get('email'), password: form.get('password') });
+    if (!parsed.success) return toast.error(parsed.error.issues[0].message);
+
+    setLoading(true);
+    try {
+      await loginWithEmail(parsed.data.email, parsed.data.password);
+      toast.success('Welcome back!');
+      router.push(redirect);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Invalid email or password');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function onGoogle() {
+    setGoogleLoading(true);
+    try {
+      await loginWithGoogle();
+      router.push(redirect);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Google sign-in failed');
+    } finally {
+      setGoogleLoading(false);
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="space-y-1 text-center">
+        <h1 className="text-2xl font-bold">Welcome back</h1>
+        <p className="text-sm text-muted-foreground">Log in to continue studying</p>
+      </div>
+
+      <form onSubmit={onSubmit} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <Input id="email" name="email" type="email" placeholder="you@example.com" autoComplete="email" required />
+        </div>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password">Password</Label>
+            <Link href="/forgot-password" className="text-xs text-primary hover:underline">Forgot?</Link>
+          </div>
+          <Input id="password" name="password" type="password" autoComplete="current-password" required />
+        </div>
+        <Button type="submit" variant="gradient" className="w-full" disabled={loading}>
+          {loading ? 'Signing in...' : 'Log in'}
+        </Button>
+      </form>
+
+      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+        <span className="h-px flex-1 bg-border" /> OR <span className="h-px flex-1 bg-border" />
+      </div>
+
+      <Button variant="outline" className="w-full" onClick={onGoogle} disabled={googleLoading}>
+        {googleLoading ? 'Connecting...' : 'Continue with Google'}
+      </Button>
+
+      <p className="text-center text-sm text-muted-foreground">
+        No account? <Link href="/register" className="text-primary hover:underline">Sign up</Link>
+      </p>
+    </div>
+  );
+}
