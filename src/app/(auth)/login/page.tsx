@@ -61,8 +61,7 @@ function LoginForm() {
     setGoogleLoading(true);
     try {
       await loginWithGoogle();
-      router.push(redirect);
-    } catch (err) {
+      window.location.href = redirect;    } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Google sign-in failed');
     } finally {
       setGoogleLoading(false);
