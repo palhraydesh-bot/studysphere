@@ -4,9 +4,7 @@ import { getAuth } from 'firebase-admin/auth';
 function initAdmin(): App {
   const existing = getApps();
   if (existing.length) return existing[0];
-  
   const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT || '{}');
-  
   return initializeApp({
     credential: cert(serviceAccount)
   });
@@ -14,7 +12,6 @@ function initAdmin(): App {
 
 export const adminApp = initAdmin();
 export const adminAuth = getAuth(adminApp);
-
 const FIVE_DAYS_MS = 60 * 60 * 24 * 5 * 1000;
 
 export async function createSessionCookie(idToken: string) {
