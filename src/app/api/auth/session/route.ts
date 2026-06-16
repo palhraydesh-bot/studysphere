@@ -3,15 +3,17 @@ import { NextResponse } from 'next/server';
 import { createSessionCookie } from '@/lib/firebase/admin';
 
 const SESSION_COOKIE = 'ss_session';
-const MAX_AGE = 60 * 60 * 24 * 5; // 5 days
+const MAX_AGE = 60 * 60 * 24 * 5;
 
-/** Exchange a client ID token for a secure httpOnly session cookie. */
 export async function POST(request: Request) {
   try {
     const { idToken } = await request.json();
     if (!idToken) return NextResponse.json({ error: 'Missing idToken' }, { status: 400 });
-
+    
+    console.log('Creating session cookie...');
     const sessionCookie = await createSessionCookie(idToken);
+    console.log('Session cookie created!');
+    
     const store = await cookies();
     store.set(SESSION_COOKIE, sessionCookie, {
       httpOnly: true,
@@ -21,12 +23,12 @@ export async function POST(request: Request) {
       maxAge: MAX_AGE
     });
     return NextResponse.json({ status: 'ok' });
-  } catch {
-    return NextResponse.json({ error: 'Failed to create session' }, { status: 401 });
+  } catch (err) {
+    console.error('Session error:', err);
+    return NextResponse.json({ error: String(err) }, { status: 401 });
   }
 }
 
-/** Clear the session cookie on sign out. */
 export async function DELETE() {
   const store = await cookies();
   store.delete(SESSION_COOKIE);
