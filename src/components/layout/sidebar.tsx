@@ -18,6 +18,7 @@ const NAV = [
   { href: '/dashboard/subjects', label: 'Subjects', icon: BookOpen, ready: true },
   { href: '/dashboard/journal', label: 'Journal', icon: BookHeart, ready: true },
   { href: '/dashboard/flashcards', label: 'Flashcards', icon: Layers, ready: true },
+  { href: '/dashboard/bushido', label: 'Bushido', icon: ShieldCheck, ready: true },
   { href: '/dashboard/assistant', label: 'AI Assistant', icon: Sparkles, ready: true }
 ];
 
