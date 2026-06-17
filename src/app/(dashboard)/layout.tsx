@@ -1,16 +1,15 @@
 import { Sidebar } from '@/components/layout/sidebar';
 import { Topbar } from '@/components/layout/topbar';
-import { MobileNavWrapper } from '@/components/mobile-nav-wrapper';
 
+/** Authenticated app shell. Access is guarded by src/middleware.ts. */
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
       <div className="flex min-h-screen flex-1 flex-col">
         <Topbar />
-        <main className="flex-1 p-4 pb-20 md:p-6 md:pb-6">{children}</main>
+        <main className="flex-1 p-4 md:p-6">{children}</main>
       </div>
-      <MobileNavWrapper />
     </div>
   );
 }
