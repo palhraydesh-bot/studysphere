@@ -1,10 +1,14 @@
+import { NextRequest, NextResponse } from 'next/server';
+
+const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+const SYSTEM_PROMPT = "You are a helpful study assistant.";
+const MAX_TOKENS = 1024;
+
 async function callGemini(messages: { role: 'user' | 'assistant'; content: string }[]): Promise<string> {
   const contents = messages.map(m => ({
     role: m.role === 'assistant' ? 'model' : 'user',
     parts: [{ text: m.content }]
   }));
-
-  console.log("GEMINI KEY:", !!process.env.GEMINI_API_KEY);
 
   const res = await fetch(`${GEMINI_URL}?key=${process.env.GEMINI_API_KEY}`, {
     method: 'POST',
@@ -12,22 +16,20 @@ async function callGemini(messages: { role: 'user' | 'assistant'; content: strin
     body: JSON.stringify({
       system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
       contents,
-      generationConfig: {
-        maxOutputTokens: MAX_TOKENS,
-        temperature: 0.4
-      }
+      generationConfig: { maxOutputTokens: MAX_TOKENS, temperature: 0.4 }
     })
   });
 
-  console.log("STATUS:", res.status);
-
   const data = await res.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "No response";
+}
 
-  console.log("DATA:", JSON.stringify(data));
-
-  if (!res.ok) {
-    throw new Error(`Gemini error ${res.status}`);
+export async function POST(req: NextRequest) {
+  try {
+    const { messages } = await req.json();
+    const reply = await callGemini(messages);
+    return NextResponse.json({ reply });
+  } catch (error) {
+    return NextResponse.json({ error: "Assistant unavailable" }, { status: 500 });
   }
-
-  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
 }
