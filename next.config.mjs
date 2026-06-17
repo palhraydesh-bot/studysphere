@@ -1,3 +1,10 @@
+import withPWA from 'next-pwa';
+
+const pwaConfig = withPWA({
+  dest: 'public',
+  disable: process.env.NODE_ENV === 'development',
+});
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   typescript: {
@@ -26,4 +33,5 @@ const nextConfig = {
     ];
   },
 };
-export default nextConfig;
+
+export default pwaConfig(nextConfig);
