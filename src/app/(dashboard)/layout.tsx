@@ -1,6 +1,6 @@
 import { Sidebar } from '@/components/layout/sidebar';
 import { Topbar } from '@/components/layout/topbar';
-import { MobileNav } from '@/components/sidebar';
+import { MobileNavWrapper } from '@/components/mobile-nav-wrapper';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -10,7 +10,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <Topbar />
         <main className="flex-1 p-4 pb-20 md:p-6 md:pb-6">{children}</main>
       </div>
-      <MobileNav />
+      <MobileNavWrapper />
     </div>
   );
 }
