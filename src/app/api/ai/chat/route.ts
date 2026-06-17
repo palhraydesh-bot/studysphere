@@ -17,7 +17,7 @@ async function callGemini(messages: { role: 'user' | 'assistant'; content: strin
     role: m.role === 'assistant' ? 'model' : 'user',
     parts: [{ text: m.content }]
   }));
-
+console.log("GEMINI KEY:", !!process.env.GEMINI_API_KEY);
   const res = await fetch(`${GEMINI_URL}?key=${process.env.GEMINI_API_KEY}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
