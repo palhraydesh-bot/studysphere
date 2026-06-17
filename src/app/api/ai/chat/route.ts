@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const GEMINI_URL =
-  const GEMINI_URL =
-"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
 const SYSTEM_PROMPT = "You are a helpful study assistant.";
 const MAX_TOKENS = 1024;
@@ -25,9 +24,6 @@ async function callGemini(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        system_instruction: {
-          parts: [{ text: SYSTEM_PROMPT }],
-        },
         contents,
         generationConfig: {
           maxOutputTokens: MAX_TOKENS,
