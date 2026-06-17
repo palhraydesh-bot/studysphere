@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider } from '@/hooks/use-auth';
 import { PwaInit } from '@/components/pwa-init';
+import { MobileNav } from '@/components/sidebar';
 import { Toaster } from 'sonner';
 import './globals.css';
 
@@ -27,6 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <AuthProvider>{children}</AuthProvider>
           <Toaster richColors position="top-center" />
           <PwaInit />
+          <MobileNav />
         </ThemeProvider>
       </body>
     </html>

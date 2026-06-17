@@ -8,7 +8,6 @@ import {
   BookOpen, Sparkles, GraduationCap, BookHeart, Layers
 } from 'lucide-react';
 
-/** Primary navigation. Later milestones enable the disabled links. */
 const NAV = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, ready: true },
   { href: '/dashboard/planner', label: 'Planner', icon: CalendarCheck, ready: true },
@@ -19,7 +18,7 @@ const NAV = [
   { href: '/dashboard/journal', label: 'Journal', icon: BookHeart, ready: true },
   { href: '/dashboard/flashcards', label: 'Flashcards', icon: Layers, ready: true },
   { href: '/dashboard/bushido', label: 'Bushido', icon: ShieldCheck, ready: true },
-  { href: '/dashboard/assistant', label: 'AI Assistant', icon: Sparkles, ready: true }
+  { href: '/dashboard/assistant', label: 'AI Assistant', icon: Sparkles, ready: true },
 ];
 
 export function Sidebar() {
@@ -50,5 +49,36 @@ export function Sidebar() {
         })}
       </nav>
     </aside>
+  );
+}
+
+export function MobileNav() {
+  const pathname = usePathname();
+  const mobileNav = [
+    { href: '/dashboard', label: 'Home', icon: LayoutDashboard },
+    { href: '/dashboard/planner', label: 'Planner', icon: CalendarCheck },
+    { href: '/dashboard/pomodoro', label: 'Pomodoro', icon: Timer },
+    { href: '/dashboard/notes', label: 'Notes', icon: NotebookPen },
+    { href: '/dashboard/assistant', label: 'AI', icon: Sparkles },
+  ];
+  return (
+    <nav className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around border-t bg-background px-2 py-2 md:hidden">
+      {mobileNav.map(({ href, label, icon: Icon }) => {
+        const active = pathname === href;
+        return (
+          <Link
+            key={href}
+            href={href}
+            className={cn(
+              'flex flex-col items-center gap-1 px-2 py-1 text-xs',
+              active ? 'text-primary font-semibold' : 'text-muted-foreground'
+            )}
+          >
+            <Icon className="h-5 w-5" />
+            <span>{label}</span>
+          </Link>
+        );
+      })}
+    </nav>
   );
 }
