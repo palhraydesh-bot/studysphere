@@ -7,6 +7,8 @@ import {
   LayoutDashboard, CalendarCheck, Timer, ShieldCheck, NotebookPen,
   BookOpen, Sparkles, GraduationCap, BookHeart, Layers
 } from 'lucide-react';
+import { useGamification } from '@/hooks/use-gamification';
+import { useDashboardStats } from '@/hooks/use-dashboard-stats';
 
 const NAV = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, ready: true },
@@ -28,6 +30,9 @@ const QUOTE = {
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { stats } = useDashboardStats();
+  const { profile, level } = useGamification(stats.streakDays);
+
   return (
     <aside className="glass hidden w-64 shrink-0 flex-col rounded-none p-4 md:flex">
       <Link href="/dashboard" className="mb-6 flex items-center gap-2 px-2 font-bold">
@@ -55,23 +60,23 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* Level & XP */}
       <div className="mt-4 rounded-lg bg-primary/10 p-3">
         <div className="flex items-center gap-2 mb-2">
           <span className="text-2xl">⚡</span>
           <div>
-            <p className="text-xs text-muted-foreground">Level 7</p>
-            <p className="text-sm font-bold">Samurai</p>
+            <p className="text-xs text-muted-foreground">Level {level.level}</p>
+            <p className="text-sm font-bold">{level.title}</p>
           </div>
         </div>
         <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-          <div className="h-1.5 rounded-full bg-primary" style={{ width: '69%' }} />
+          <div className="h-1.5 rounded-full bg-primary" style={{ width: `${level.progressPct}%` }} />
         </div>
-        <p className="text-xs text-muted-foreground mt-1">1,250 / 1,800 XP</p>
-        <p className="text-xs text-orange-400 mt-1">🔥 14 Day Streak</p>
+        <p className="text-xs text-muted-foreground mt-1">{profile.totalXp} / {level.nextXp} XP</p>
+        {stats.streakDays > 0 && (
+          <p className="text-xs text-orange-400 mt-1">🔥 {stats.streakDays} Day Streak</p>
+        )}
       </div>
 
-      {/* Quote */}
       <div className="mt-3 rounded-lg bg-muted/50 p-3">
         <p className="text-xs italic text-muted-foreground">"{QUOTE.text}"</p>
         <p className="text-xs text-primary mt-1">— {QUOTE.author}</p>
