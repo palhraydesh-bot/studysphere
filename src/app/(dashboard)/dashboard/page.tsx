@@ -6,6 +6,7 @@ import { TodayTasksCard } from '@/components/dashboard/today-tasks-card';
 import { RecentNotesCard } from '@/components/dashboard/recent-notes-card';
 import { StudyTimeChart } from '@/components/dashboard/study-time-chart';
 import { SubjectsProgressCard } from '@/components/dashboard/subjects-progress-card';
+import { AchievementsCard } from '@/components/dashboard/achievements-card';
 import { useDashboardStats } from '@/hooks/use-dashboard-stats';
 import { useAuth } from '@/hooks/use-auth';
 import { formatDuration } from '@/lib/utils';
@@ -43,9 +44,10 @@ export default function DashboardPage() {
         <SubjectsProgressCard />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <TodayTasksCard delay={0.4} />
         <RecentNotesCard delay={0.45} />
+        <AchievementsCard />
       </div>
     </div>
   );
