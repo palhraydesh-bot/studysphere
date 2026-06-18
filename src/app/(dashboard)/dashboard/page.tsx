@@ -1,6 +1,6 @@
 'use client';
 
-import { Clock, Flame, Gauge, Timer, Plus } from 'lucide-react';
+import { Clock, Flame, Gauge, Timer, Plus, Sparkles } from 'lucide-react';
 import { StatCard } from '@/components/shared/stat-card';
 import { TodayTasksCard } from '@/components/dashboard/today-tasks-card';
 import { RecentNotesCard } from '@/components/dashboard/recent-notes-card';
@@ -11,7 +11,6 @@ import { useDashboardStats } from '@/hooks/use-dashboard-stats';
 import { useAuth } from '@/hooks/use-auth';
 import { formatDuration } from '@/lib/utils';
 import Link from 'next/link';
-import { Sparkles } from 'lucide-react';
 
 export default function DashboardPage() {
   const { stats } = useDashboardStats();
@@ -48,10 +47,26 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <TodayTasksCard delay={0.4} />
-        <RecentNotesCard delay={0.45} />
+        {/* Goal Tracker */}
+        <Link href="/dashboard/planner" className="rounded-xl border bg-card p-4 hover:bg-accent block">
+          <h2 className="font-semibold mb-2">🎯 Goal Tracker</h2>
+          <p className="text-3xl font-bold">{stats.goalProgress}%</p>
+          <p className="text-sm text-muted-foreground">Weekly goal progress</p>
+          <div className="h-2 w-full rounded-full bg-muted overflow-hidden mt-3">
+            <div className="h-2 rounded-full bg-primary" style={{ width: `${stats.goalProgress}%` }} />
+          </div>
+        </Link>
 
-        {/* AI Assistant Mini Card */}
+        {/* Focus Shield */}
+        <Link href="/dashboard/focus" className="rounded-xl border bg-card p-4 hover:bg-accent block">
+          <h2 className="font-semibold mb-2">🛡️ Focus Shield</h2>
+          <p className="text-sm text-muted-foreground mb-3">Block distractions and stay focused</p>
+          <div className="bg-primary text-white text-center rounded-lg py-2 text-sm font-medium">
+            Activate Focus Shield
+          </div>
+        </Link>
+
+        {/* AI Assistant */}
         <div className="rounded-xl border bg-card p-4 space-y-3">
           <div className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
@@ -64,13 +79,15 @@ export default function DashboardPage() {
             <Link href="/dashboard/assistant" className="text-xs bg-muted rounded-lg p-2 hover:bg-accent text-center">❓ Quiz me</Link>
             <Link href="/dashboard/assistant" className="text-xs bg-muted rounded-lg p-2 hover:bg-accent text-center">📅 Generate plan</Link>
           </div>
-          <Link href="/dashboard/assistant" className="block w-full text-center text-xs bg-primary text-white rounded-lg p-2 mt-2">
+          <Link href="/dashboard/assistant" className="block w-full text-center text-xs bg-primary text-white rounded-lg p-2">
             Open AI Assistant →
           </Link>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <TodayTasksCard delay={0.4} />
+        <RecentNotesCard delay={0.45} />
         <AchievementsCard />
       </div>
     </div>
