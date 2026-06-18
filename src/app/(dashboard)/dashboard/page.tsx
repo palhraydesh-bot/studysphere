@@ -7,19 +7,15 @@ import { RecentNotesCard } from '@/components/dashboard/recent-notes-card';
 import { StudyTimeChart } from '@/components/dashboard/study-time-chart';
 import { SubjectsProgressCard } from '@/components/dashboard/subjects-progress-card';
 import { AchievementsCard } from '@/components/dashboard/achievements-card';
-import { StreakCalendarCard } from '@/components/dashboard/streak-calendar-card';
-import { FocusShieldWidget } from '@/components/dashboard/focus-shield-widget';
-import { AiAssistantWidget } from '@/components/dashboard/ai-assistant-widget';
-import { XpCard } from '@/components/dashboard/xp-card';
 import { useDashboardStats } from '@/hooks/use-dashboard-stats';
 import { useAuth } from '@/hooks/use-auth';
-import { useFocusShieldState } from '@/hooks/use-focus-shield-state';
 import { formatDuration } from '@/lib/utils';
+import Link from 'next/link';
+import { Sparkles } from 'lucide-react';
 
 export default function DashboardPage() {
   const { stats } = useDashboardStats();
   const { user } = useAuth();
-  const { active: focusActive, endsAt: focusEndsAt, blockedCount: focusBlockedCount } = useFocusShieldState();
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
@@ -43,25 +39,38 @@ export default function DashboardPage() {
         <StatCard label="Streak" value={`${stats.streakDays} days`} icon={Flame} hint="Keep it going!" delay={0.05} />
         <StatCard label="Focus Score" value={`${stats.productivityScore}`} icon={Gauge} hint="Excellent!" delay={0.1} />
         <StatCard label="Pomodoros" value={`${stats.pomodoroCount}`} icon={Timer} hint="Sessions today" delay={0.15} />
-        <XpCard xpToday={0} totalXp={0} delay={0.2} />
+        <StatCard label="XP Today" value={`${stats.pomodoroCount * 10} XP`} icon={Sparkles} hint={`Total XP: ${stats.pomodoroCount * 50}`} delay={0.2} />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <StudyTimeChart weeklySeconds={stats.weeklySeconds} />
-        </div>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <StudyTimeChart weeklySeconds={stats.weeklySeconds} />
         <SubjectsProgressCard />
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <StreakCalendarCard delay={0.25} />
-        <FocusShieldWidget active={focusActive} endsAt={focusEndsAt} blockedCount={focusBlockedCount} delay={0.3} />
-        <AiAssistantWidget delay={0.35} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <TodayTasksCard delay={0.4} />
         <RecentNotesCard delay={0.45} />
+
+        {/* AI Assistant Mini Card */}
+        <div className="rounded-xl border bg-card p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            <h2 className="font-semibold">AI Assistant</h2>
+          </div>
+          <p className="text-sm text-muted-foreground">How can I help you today?</p>
+          <div className="grid grid-cols-2 gap-2">
+            <Link href="/dashboard/assistant" className="text-xs bg-muted rounded-lg p-2 hover:bg-accent text-center">📖 Explain a topic</Link>
+            <Link href="/dashboard/assistant" className="text-xs bg-muted rounded-lg p-2 hover:bg-accent text-center">📝 Summarize notes</Link>
+            <Link href="/dashboard/assistant" className="text-xs bg-muted rounded-lg p-2 hover:bg-accent text-center">❓ Quiz me</Link>
+            <Link href="/dashboard/assistant" className="text-xs bg-muted rounded-lg p-2 hover:bg-accent text-center">📅 Generate plan</Link>
+          </div>
+          <Link href="/dashboard/assistant" className="block w-full text-center text-xs bg-primary text-white rounded-lg p-2 mt-2">
+            Open AI Assistant →
+          </Link>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <AchievementsCard />
       </div>
     </div>
