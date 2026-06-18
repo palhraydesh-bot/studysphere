@@ -3,16 +3,30 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { ArrowLeft, Lock, LockOpen, Save, Trash2 } from 'lucide-react';
+import { ArrowLeft, Lock, LockOpen, Save, Trash2, Sparkles, Calendar, Heart, Lightbulb, Feather } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { GlassCard } from '@/components/shared/glass-card';
-import { MoodPicker } from '@/components/journal/mood-picker';
 import { LockDialog } from '@/components/journal/lock-dialog';
 import { useAuth } from '@/hooks/use-auth';
 import { deleteEntry, getEntry, updateEntry } from '@/lib/journal/journal-service';
 import { decryptText, encryptText } from '@/lib/journal/journal-crypto';
+import { cn } from '@/lib/utils';
 import type { JournalEntry, Mood } from '@/lib/firestore/journal-schema';
+
+const MOODS: { value: Mood; emoji: string; label: string }[] = [
+  { value: 'great', emoji: '😄', label: 'Great' },
+  { value: 'good', emoji: '🙂', label: 'Good' },
+  { value: 'okay', emoji: '😐', label: 'Okay' },
+  { value: 'bad', emoji: '😔', label: 'Bad' },
+  { value: 'awful', emoji: '😣', label: 'Awful' },
+];
+
+const QUOTES = [
+  'Small steps every day lead to big changes.',
+  'Your story matters, even the quiet chapters.',
+  'Reflection today, growth tomorrow.',
+];
 
 export default function JournalEntryPage() {
   const router = useRouter();
@@ -28,8 +42,6 @@ export default function JournalEntryPage() {
   const [unlocked, setUnlocked] = useState(false);
   const [dialog, setDialog] = useState<null | 'lock' | 'unlock'>(null);
   const [saving, setSaving] = useState(false);
-  // Passphrase held in memory for the current session so a locked entry can be
-  // re-encrypted on save without prompting again. Never persisted.
   const [sessionPass, setSessionPass] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -61,11 +73,9 @@ export default function JournalEntryPage() {
     setSaving(true);
     try {
       if (locked && sessionPass) {
-        // Entry was locked and unlocked this session: re-encrypt so it stays private.
         const { ciphertext, salt, iv } = await encryptText(content, sessionPass);
         await persist({ content: ciphertext, locked: true, salt, iv });
       } else {
-        // Unlocked/plain entry: store plaintext.
         await persist({ content, locked: false });
       }
       toast.success('Entry saved');
@@ -112,10 +122,14 @@ export default function JournalEntryPage() {
 
   if (!entry) return <p className="text-sm text-muted-foreground">Loading entry...</p>;
 
+  const quote = QUOTES[new Date(entry.date).getDate() % QUOTES.length];
+
   return (
-    <div className="space-y-4 animate-fade-in">
+    <div className="space-y-6 animate-fade-in pb-10">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <Button variant="ghost" onClick={() => router.push('/dashboard/journal')}><ArrowLeft className="h-4 w-4" /> Back</Button>
+        <Button variant="ghost" onClick={() => router.push('/dashboard/journal')}>
+          <ArrowLeft className="h-4 w-4" /> Back to entries
+        </Button>
         <div className="flex gap-2">
           {locked && !unlocked ? (
             <Button variant="outline" onClick={() => setDialog('unlock')}><LockOpen className="h-4 w-4" /> Unlock</Button>
@@ -123,16 +137,63 @@ export default function JournalEntryPage() {
             <Button variant="outline" onClick={() => setDialog('lock')}><Lock className="h-4 w-4" /> {locked ? 'Re-lock' : 'Lock'}</Button>
           )}
           <Button variant="destructive" onClick={remove}><Trash2 className="h-4 w-4" /> Delete</Button>
-          <Button variant="gradient" onClick={save} disabled={saving || (locked && !unlocked)}><Save className="h-4 w-4" /> {saving ? 'Saving...' : 'Save'}</Button>
+          <Button variant="gradient" onClick={save} disabled={saving || (locked && !unlocked)}>
+            <Save className="h-4 w-4" /> {saving ? 'Saving...' : 'Save'}
+          </Button>
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
-        <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Entry title" className="text-lg font-semibold" />
-        <span className="shrink-0 text-sm text-muted-foreground">{entry.date}</span>
+      <div className="flex flex-col items-center gap-2 text-center">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-5 w-5 text-primary" />
+          <h1 className="bg-gradient-brand bg-clip-text text-3xl font-bold text-transparent">New Journal Entry</h1>
+          <Sparkles className="h-5 w-5 text-primary" />
+        </div>
+        <p className="flex items-center gap-1 text-sm text-muted-foreground">
+          Capture your day, reflect &amp; grow <Heart className="h-3.5 w-3.5 text-pink-400" />
+        </p>
       </div>
 
-      <MoodPicker value={mood} onChange={setMood} />
+      <div className="flex justify-center">
+        <span className="flex items-center gap-2 rounded-full border border-input bg-secondary/40 px-4 py-1.5 text-sm font-medium">
+          <Calendar className="h-4 w-4 text-primary" />
+          {new Date(entry.date).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
+        </span>
+      </div>
+
+      <div className="space-y-2">
+        <label className="flex items-center gap-1.5 text-sm font-medium">
+          Entry title <Sparkles className="h-3.5 w-3.5 text-primary" />
+        </label>
+        <Input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Give your entry a title..."
+          className="text-base"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <label className="flex items-center gap-1.5 text-sm font-medium">
+          How was your day? <Sparkles className="h-3.5 w-3.5 text-primary" />
+        </label>
+        <div className="grid grid-cols-5 gap-2">
+          {MOODS.map((m) => (
+            <button
+              key={m.value}
+              type="button"
+              onClick={() => setMood(m.value)}
+              className={cn(
+                'flex flex-col items-center gap-1 rounded-xl border-2 py-3 transition-colors',
+                mood === m.value ? 'border-primary bg-primary/10' : 'border-input hover:border-primary/40'
+              )}
+            >
+              <span className="text-2xl">{m.emoji}</span>
+              <span className="text-xs text-muted-foreground">{m.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
 
       {locked && !unlocked ? (
         <GlassCard className="flex flex-col items-center gap-3 py-10 text-center">
@@ -142,15 +203,27 @@ export default function JournalEntryPage() {
         </GlassCard>
       ) : (
         <>
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Write about your day (Markdown supported)..."
-            className="min-h-[240px] w-full rounded-xl border border-input bg-background/60 p-4 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          />
+          <div className="space-y-2">
+            <label className="flex items-center gap-1.5 text-sm font-medium">
+              Write about your day <Sparkles className="h-3.5 w-3.5 text-primary" />
+            </label>
+            <div className="relative">
+              <textarea
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="Write about your day (Markdown supported)..."
+                className="min-h-[220px] w-full rounded-xl border-2 border-primary/40 bg-background/60 p-4 text-sm shadow-[0_0_24px_-8px_var(--primary)] focus-visible:outline-none focus-visible:border-primary"
+              />
+              <Feather className="pointer-events-none absolute right-4 top-4 h-6 w-6 text-primary/40" />
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <GlassCard>
-              <h2 className="mb-2 font-semibold">Gratitude</h2>
+              <h2 className="mb-1 flex items-center gap-1.5 font-semibold text-pink-400">
+                <Heart className="h-4 w-4" /> Gratitude
+              </h2>
+              <p className="mb-2 text-xs text-muted-foreground">List things you&apos;re grateful for</p>
               <textarea
                 value={gratitude}
                 onChange={(e) => setGratitude(e.target.value)}
@@ -159,14 +232,21 @@ export default function JournalEntryPage() {
               />
             </GlassCard>
             <GlassCard>
-              <h2 className="mb-2 font-semibold">Reflection</h2>
+              <h2 className="mb-1 flex items-center gap-1.5 font-semibold text-amber-400">
+                <Lightbulb className="h-4 w-4" /> Reflection
+              </h2>
+              <p className="mb-2 text-xs text-muted-foreground">What did you learn today?</p>
               <textarea
                 value={reflection}
                 onChange={(e) => setReflection(e.target.value)}
-                placeholder="What did you learn today?"
+                placeholder="Share your learnings..."
                 className="min-h-[120px] w-full rounded-lg border border-input bg-background/60 p-3 text-sm"
               />
             </GlassCard>
+          </div>
+
+          <div className="flex items-center justify-center gap-2 rounded-full bg-secondary/40 px-4 py-2.5 text-center text-sm text-muted-foreground">
+            ✨ {quote} <Heart className="h-3.5 w-3.5 text-pink-400" />
           </div>
         </>
       )}
