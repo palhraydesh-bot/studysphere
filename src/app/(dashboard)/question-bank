@@ -1,0 +1,222 @@
+"use client";
+
+import { useState } from "react";
+
+const SUBJECTS_LIST = ["All", "Physics", "Mathematics", "Chemistry", "Biology", "English"];
+const TOPICS: Record<string, string[]> = {
+  Physics: ["Laws of Motion", "Work & Energy", "Thermodynamics", "Electricity", "Magnetism", "Optics"],
+  Mathematics: ["Algebra", "Trigonometry", "Coordinate Geometry", "Calculus", "Statistics", "Number System"],
+  Chemistry: ["Chemical Bonding", "Organic Chemistry", "Periodic Table", "Electrochemistry", "Acids & Bases"],
+  Biology: ["Cell Biology", "Plant Kingdom", "Human Physiology", "Genetics", "Ecology"],
+  English: ["Grammar", "Comprehension", "Vocabulary", "Essay Writing"],
+};
+
+type QItem = { id: number; q: string; options: string[]; ans: number; explanation: string; subject: string; topic: string; difficulty: "Easy" | "Medium" | "Hard"; };
+
+const QUESTIONS: QItem[] = [
+  { id: 1, q: "Newton's second law of motion relates force to:", options: ["Velocity", "Acceleration", "Displacement", "Speed"], ans: 1, explanation: "F = ma. Newton's 2nd law states F is proportional to acceleration.", subject: "Physics", topic: "Laws of Motion", difficulty: "Easy" },
+  { id: 2, q: "The work done when force is perpendicular to displacement is:", options: ["Maximum", "Zero", "Minimum", "Infinite"], ans: 1, explanation: "W = F·d·cos90° = 0. When force and displacement are perpendicular, work done is zero.", subject: "Physics", topic: "Work & Energy", difficulty: "Easy" },
+  { id: 3, q: "sin²θ + cos²θ = ?", options: ["0", "1", "2", "sinθ·cosθ"], ans: 1, explanation: "This is a fundamental Pythagorean trigonometric identity: sin²θ + cos²θ = 1", subject: "Mathematics", topic: "Trigonometry", difficulty: "Easy" },
+  { id: 4, q: "The molecular formula of water is:", options: ["H₂O₂", "H₂O", "HO₂", "H₃O"], ans: 1, explanation: "Water has 2 hydrogen atoms and 1 oxygen atom: H₂O", subject: "Chemistry", topic: "Chemical Bonding", difficulty: "Easy" },
+  { id: 5, q: "The powerhouse of the cell is:", options: ["Nucleus", "Mitochondria", "Ribosome", "Golgi body"], ans: 1, explanation: "Mitochondria produce ATP (energy) through cellular respiration, earning the name 'powerhouse of the cell'.", subject: "Biology", topic: "Cell Biology", difficulty: "Easy" },
+  { id: 6, q: "The slope of a line perpendicular to y = 2x + 3 is:", options: ["2", "-1/2", "1/2", "-2"], ans: 1, explanation: "For perpendicular lines, slopes are negative reciprocals. If m₁ = 2, then m₂ = -1/2.", subject: "Mathematics", topic: "Coordinate Geometry", difficulty: "Medium" },
+  { id: 7, q: "Which law states that equal volumes of gases at same T and P contain equal number of molecules?", options: ["Boyle's Law", "Avogadro's Law", "Charles's Law", "Dalton's Law"], ans: 1, explanation: "Avogadro's Law: V ∝ n (at constant T and P). Equal volumes → equal moles → equal molecules.", subject: "Chemistry", topic: "Acids & Bases", difficulty: "Medium" },
+  { id: 8, q: "Acceleration due to gravity on the surface of Earth is approximately:", options: ["9.8 cm/s²", "9.8 m/s²", "98 m/s²", "0.98 m/s²"], ans: 1, explanation: "g ≈ 9.8 m/s² on Earth's surface. This is standard gravitational acceleration.", subject: "Physics", topic: "Laws of Motion", difficulty: "Easy" },
+  { id: 9, q: "The process of photosynthesis converts light energy into:", options: ["Kinetic energy", "Chemical energy", "Electrical energy", "Thermal energy"], ans: 1, explanation: "Plants convert light energy into chemical energy stored in glucose through photosynthesis.", subject: "Biology", topic: "Plant Kingdom", difficulty: "Easy" },
+  { id: 10, q: "The value of tan 45° is:", options: ["0", "1", "√3", "1/√3"], ans: 1, explanation: "tan 45° = sin45°/cos45° = (1/√2)/(1/√2) = 1", subject: "Mathematics", topic: "Trigonometry", difficulty: "Easy" },
+  { id: 11, q: "Which part of the human body produces insulin?", options: ["Liver", "Pancreas", "Kidney", "Stomach"], ans: 1, explanation: "Beta cells in the islets of Langerhans in the pancreas produce insulin to regulate blood sugar.", subject: "Biology", topic: "Human Physiology", difficulty: "Medium" },
+  { id: 12, q: "Ohm's Law states that V = ?", options: ["I/R", "IR", "I²R", "P/I"], ans: 1, explanation: "Ohm's Law: V = IR, where V = voltage, I = current, R = resistance.", subject: "Physics", topic: "Electricity", difficulty: "Easy" },
+  { id: 13, q: "The pH of a neutral solution at 25°C is:", options: ["0", "7", "14", "1"], ans: 1, explanation: "A neutral solution (like pure water) has pH = 7 at 25°C. Below 7 = acidic, above 7 = basic.", subject: "Chemistry", topic: "Acids & Bases", difficulty: "Easy" },
+  { id: 14, q: "d/dx (x²) = ?", options: ["x", "2x", "x²", "2x²"], ans: 1, explanation: "Using power rule: d/dx(xⁿ) = nxⁿ⁻¹. So d/dx(x²) = 2x¹ = 2x", subject: "Mathematics", topic: "Calculus", difficulty: "Medium" },
+  { id: 15, q: "Speed of light in vacuum is approximately:", options: ["3×10⁶ m/s", "3×10⁸ m/s", "3×10¹⁰ m/s", "3×10⁴ m/s"], ans: 1, explanation: "c ≈ 3×10⁸ m/s (300,000 km/s). This is an important constant in physics.", subject: "Physics", topic: "Optics", difficulty: "Medium" },
+];
+
+const DIFF_COLOR: Record<string, string> = {
+  Easy: "text-green-400 bg-green-400/10 border-green-400/20",
+  Medium: "text-yellow-400 bg-yellow-400/10 border-yellow-400/20",
+  Hard: "text-red-400 bg-red-400/10 border-red-400/20",
+};
+
+const SUB_COLOR: Record<string, string> = {
+  Physics: "#3b82f6", Mathematics: "#a855f7", Chemistry: "#22c55e", Biology: "#f97316", English: "#eab308",
+};
+
+export default function QuestionBankPage() {
+  const [subFilter, setSubFilter] = useState("All");
+  const [topicFilter, setTopicFilter] = useState("All");
+  const [diffFilter, setDiffFilter] = useState("All");
+  const [search, setSearch] = useState("");
+  const [revealed, setRevealed] = useState<Set<number>>(new Set());
+  const [bookmarked, setBookmarked] = useState<Set<number>>(new Set());
+  const [selected, setSelected] = useState<Record<number, number>>({});
+
+  const topics = subFilter === "All" ? ["All"] : ["All", ...(TOPICS[subFilter] || [])];
+
+  const filtered = QUESTIONS.filter((q) => {
+    const matchSub = subFilter === "All" || q.subject === subFilter;
+    const matchTopic = topicFilter === "All" || q.topic === topicFilter;
+    const matchDiff = diffFilter === "All" || q.difficulty === diffFilter;
+    const matchSearch = q.q.toLowerCase().includes(search.toLowerCase());
+    return matchSub && matchTopic && matchDiff && matchSearch;
+  });
+
+  const toggleReveal = (id: number) => {
+    setRevealed((prev) => {
+      const n = new Set(prev);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
+  };
+
+  const toggleBookmark = (id: number) => {
+    setBookmarked((prev) => {
+      const n = new Set(prev);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
+  };
+
+  const selectOpt = (qId: number, optIdx: number) => {
+    if (selected[qId] !== undefined) return;
+    setSelected((prev) => ({ ...prev, [qId]: optIdx }));
+    setRevealed((prev) => new Set([...prev, qId]));
+  };
+
+  return (
+    <div className="min-h-screen bg-[#0d0d1a] text-white">
+      <div className="p-4 md:p-6 max-w-[1200px] mx-auto">
+
+        {/* Header */}
+        <div className="flex items-start justify-between mb-6 flex-wrap gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-white">Question Bank</h1>
+            <p className="text-sm text-gray-400 mt-0.5">Practice with 50,000+ questions with detailed solutions</p>
+          </div>
+          <div className="flex gap-3">
+            {[
+              { label: "Total Questions", value: "50,000+", color: "text-violet-400" },
+              { label: "Practiced", value: Object.keys(selected).length.toString(), color: "text-blue-400" },
+              { label: "Bookmarked", value: bookmarked.size.toString(), color: "text-yellow-400" },
+            ].map((s) => (
+              <div key={s.label} className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-center">
+                <p className={`text-lg font-bold ${s.color}`}>{s.value}</p>
+                <p className="text-xs text-gray-400">{s.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 mb-5 space-y-3">
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍  Search questions..."
+            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 outline-none focus:border-violet-500/50" />
+          <div className="flex gap-2 flex-wrap">
+            <span className="text-xs text-gray-400 self-center mr-1">Subject:</span>
+            {SUBJECTS_LIST.map((s) => (
+              <button key={s} onClick={() => { setSubFilter(s); setTopicFilter("All"); }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${subFilter === s ? "bg-violet-600 text-white" : "bg-white/5 text-gray-400 hover:bg-white/10 border border-white/10"}`}>
+                {s}
+              </button>
+            ))}
+          </div>
+          {topics.length > 1 && (
+            <div className="flex gap-2 flex-wrap">
+              <span className="text-xs text-gray-400 self-center mr-1">Topic:</span>
+              {topics.map((t) => (
+                <button key={t} onClick={() => setTopicFilter(t)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${topicFilter === t ? "bg-blue-600 text-white" : "bg-white/5 text-gray-400 hover:bg-white/10 border border-white/10"}`}>
+                  {t}
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="flex gap-2 flex-wrap">
+            <span className="text-xs text-gray-400 self-center mr-1">Difficulty:</span>
+            {["All", "Easy", "Medium", "Hard"].map((d) => (
+              <button key={d} onClick={() => setDiffFilter(d)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${diffFilter === d ? "bg-orange-600 text-white" : "bg-white/5 text-gray-400 hover:bg-white/10 border border-white/10"}`}>
+                {d}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <p className="text-xs text-gray-400 mb-4">Showing {filtered.length} questions</p>
+
+        {/* Questions */}
+        <div className="space-y-4">
+          {filtered.map((item, idx) => {
+            const isRevealed = revealed.has(item.id);
+            const userAns = selected[item.id];
+            const isBookmarked = bookmarked.has(item.id);
+
+            return (
+              <div key={item.id} className={`bg-white/5 border rounded-2xl p-5 transition-all ${isRevealed ? "border-white/20" : "border-white/10 hover:border-white/15"}`}>
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-medium px-2 py-1 rounded-lg" style={{ background: SUB_COLOR[item.subject] + "22", color: SUB_COLOR[item.subject] }}>
+                      {item.subject}
+                    </span>
+                    <span className="text-xs text-gray-500 bg-white/5 px-2 py-1 rounded-lg">{item.topic}</span>
+                    <span className={`text-xs font-medium px-2 py-1 rounded-lg border ${DIFF_COLOR[item.difficulty]}`}>{item.difficulty}</span>
+                  </div>
+                  <button onClick={() => toggleBookmark(item.id)}
+                    className={`flex-shrink-0 transition-colors text-lg ${isBookmarked ? "text-yellow-400" : "text-gray-600 hover:text-yellow-400"}`}>
+                    {isBookmarked ? "🔖" : "📌"}
+                  </button>
+                </div>
+
+                <p className="text-white font-medium mb-4 text-sm leading-relaxed">
+                  <span className="text-gray-400 mr-2">Q{idx + 1}.</span>{item.q}
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
+                  {item.options.map((opt, i) => {
+                    let cls = "bg-white/5 border-white/10 text-gray-300 hover:bg-white/10 hover:border-violet-400/30 cursor-pointer";
+                    if (userAns !== undefined) {
+                      if (i === item.ans) cls = "bg-green-500/15 border-green-500/40 text-green-300 cursor-default";
+                      else if (i === userAns && i !== item.ans) cls = "bg-red-500/15 border-red-500/40 text-red-300 cursor-default";
+                      else cls = "bg-white/3 border-white/5 text-gray-600 cursor-default";
+                    }
+                    return (
+                      <button key={i} onClick={() => selectOpt(item.id, i)}
+                        className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-all text-sm ${cls}`}>
+                        <span className="w-6 h-6 rounded-full border border-current flex items-center justify-center text-xs font-medium flex-shrink-0">
+                          {["A", "B", "C", "D"][i]}
+                        </span>
+                        {opt}
+                        {userAns !== undefined && i === item.ans && <span className="ml-auto">✓</span>}
+                        {userAns !== undefined && i === userAns && i !== item.ans && <span className="ml-auto">✗</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {isRevealed && (
+                  <div className="bg-violet-500/10 border border-violet-500/20 rounded-xl p-4">
+                    <p className="text-xs font-semibold text-violet-400 mb-1">💡 Explanation</p>
+                    <p className="text-sm text-gray-300">{item.explanation}</p>
+                  </div>
+                )}
+
+                {!isRevealed && userAns === undefined && (
+                  <button onClick={() => toggleReveal(item.id)}
+                    className="text-xs text-violet-400 hover:text-violet-300 transition-colors mt-1 flex items-center gap-1">
+                    👁 Show Answer & Explanation
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {filtered.length === 0 && (
+          <div className="text-center py-16">
+            <p className="text-4xl mb-3">🔍</p>
+            <p className="text-gray-400">No questions found. Try different filters.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

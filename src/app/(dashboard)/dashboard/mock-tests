@@ -1,0 +1,279 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+
+const SUBJECTS_LIST = ["All", "Physics", "Mathematics", "Chemistry", "Biology", "English"];
+
+const TESTS = [
+  { id: 1, title: "Laws of Motion — Full Test", subject: "Physics", questions: 30, time: 45, difficulty: "Medium", attempts: 1240, avgScore: 68 },
+  { id: 2, title: "Trigonometry Practice Set", subject: "Mathematics", questions: 25, time: 35, difficulty: "Hard", attempts: 980, avgScore: 55 },
+  { id: 3, title: "Chemical Bonding Quiz", subject: "Chemistry", questions: 20, time: 25, difficulty: "Easy", attempts: 1560, avgScore: 74 },
+  { id: 4, title: "Plant Kingdom Chapter Test", subject: "Biology", questions: 30, time: 40, difficulty: "Medium", attempts: 870, avgScore: 62 },
+  { id: 5, title: "Full Physics Mock — SSC Level", subject: "Physics", questions: 50, time: 60, difficulty: "Hard", attempts: 2100, avgScore: 58 },
+  { id: 6, title: "Algebra & Number System", subject: "Mathematics", questions: 40, time: 50, difficulty: "Medium", attempts: 1350, avgScore: 63 },
+  { id: 7, title: "Organic Chemistry Basics", subject: "Chemistry", questions: 25, time: 30, difficulty: "Medium", attempts: 940, avgScore: 70 },
+  { id: 8, title: "Human Physiology Test", subject: "Biology", questions: 30, time: 40, difficulty: "Easy", attempts: 1100, avgScore: 77 },
+  { id: 9, title: "Grammar & Comprehension", subject: "English", questions: 35, time: 45, difficulty: "Easy", attempts: 780, avgScore: 80 },
+  { id: 10, title: "Electricity & Magnetism", subject: "Physics", questions: 40, time: 50, difficulty: "Hard", attempts: 1680, avgScore: 52 },
+  { id: 11, title: "Coordinate Geometry", subject: "Mathematics", questions: 30, time: 40, difficulty: "Hard", attempts: 760, avgScore: 48 },
+  { id: 12, title: "Thermodynamics Full Test", subject: "Chemistry", questions: 35, time: 45, difficulty: "Hard", attempts: 1020, avgScore: 55 },
+];
+
+const DIFF_COLOR: Record<string, string> = {
+  Easy: "text-green-400 bg-green-400/10",
+  Medium: "text-yellow-400 bg-yellow-400/10",
+  Hard: "text-red-400 bg-red-400/10",
+};
+
+const SUB_COLOR: Record<string, string> = {
+  Physics: "#3b82f6",
+  Mathematics: "#a855f7",
+  Chemistry: "#22c55e",
+  Biology: "#f97316",
+  English: "#eab308",
+};
+
+type Question = { q: string; options: string[]; ans: number; explanation: string };
+
+const SAMPLE_QUESTIONS: Question[] = [
+  { q: "A body of mass 5 kg is acted upon by two perpendicular forces 8 N and 6 N. The resultant force acting on it is:", options: ["14 N", "10 N", "2 N", "11 N"], ans: 1, explanation: "Resultant = √(8² + 6²) = √(64+36) = √100 = 10 N" },
+  { q: "Newton's first law of motion is also called:", options: ["Law of conservation of momentum", "Law of inertia", "Law of action-reaction", "Law of gravitation"], ans: 1, explanation: "Newton's first law states that a body continues in its state of rest or uniform motion unless acted upon by an external force — this is the law of inertia." },
+  { q: "The SI unit of force is:", options: ["Dyne", "Newton", "Joule", "Pascal"], ans: 1, explanation: "The SI unit of force is Newton (N). 1 N = 1 kg·m/s²" },
+  { q: "If a net force of 10 N acts on a body of mass 2 kg, the acceleration is:", options: ["20 m/s²", "5 m/s²", "0.2 m/s²", "12 m/s²"], ans: 1, explanation: "F = ma → a = F/m = 10/2 = 5 m/s²" },
+  { q: "Action and reaction forces act on:", options: ["Same body", "Different bodies", "Only moving bodies", "Only stationary bodies"], ans: 1, explanation: "According to Newton's third law, action and reaction forces always act on different bodies." },
+];
+
+export default function MockTestsPage() {
+  const [filter, setFilter] = useState("All");
+  const [search, setSearch] = useState("");
+  const [activeTest, setActiveTest] = useState<typeof TESTS[0] | null>(null);
+  const [testStarted, setTestStarted] = useState(false);
+  const [currentQ, setCurrentQ] = useState(0);
+  const [answers, setAnswers] = useState<Record<number, number>>({});
+  const [testFinished, setTestFinished] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(0);
+
+  const filtered = TESTS.filter((t) => {
+    const matchSub = filter === "All" || t.subject === filter;
+    const matchSearch = t.title.toLowerCase().includes(search.toLowerCase());
+    return matchSub && matchSearch;
+  });
+
+  const startTest = (test: typeof TESTS[0]) => {
+    setActiveTest(test);
+    setCurrentQ(0);
+    setAnswers({});
+    setTestFinished(false);
+    setTimeLeft(test.time * 60);
+    setTestStarted(true);
+  };
+
+  const selectAnswer = (optIdx: number) => {
+    if (answers[currentQ] !== undefined) return;
+    setAnswers((prev) => ({ ...prev, [currentQ]: optIdx }));
+  };
+
+  const finishTest = () => setTestFinished(true);
+
+  const score = Object.keys(answers).filter((k) => answers[+k] === SAMPLE_QUESTIONS[+k]?.ans).length;
+
+  if (testStarted && activeTest) {
+    if (testFinished) {
+      return (
+        <div className="min-h-screen bg-[#0d0d1a] text-white flex items-center justify-center p-6">
+          <div className="max-w-lg w-full bg-white/5 border border-white/10 rounded-2xl p-8 text-center">
+            <div className="text-6xl mb-4">{score >= 3 ? "🎉" : "📚"}</div>
+            <h2 className="text-2xl font-bold text-white mb-2">Test Complete!</h2>
+            <p className="text-gray-400 mb-6">{activeTest.title}</p>
+            <div className="grid grid-cols-3 gap-4 mb-6">
+              <div className="bg-white/5 rounded-xl p-4">
+                <p className="text-3xl font-bold text-violet-400">{score}/{SAMPLE_QUESTIONS.length}</p>
+                <p className="text-xs text-gray-400 mt-1">Score</p>
+              </div>
+              <div className="bg-white/5 rounded-xl p-4">
+                <p className="text-3xl font-bold text-green-400">{Math.round((score / SAMPLE_QUESTIONS.length) * 100)}%</p>
+                <p className="text-xs text-gray-400 mt-1">Accuracy</p>
+              </div>
+              <div className="bg-white/5 rounded-xl p-4">
+                <p className="text-3xl font-bold text-blue-400">{activeTest.time}m</p>
+                <p className="text-xs text-gray-400 mt-1">Time</p>
+              </div>
+            </div>
+            <div className="space-y-3 text-left mb-6">
+              {SAMPLE_QUESTIONS.map((q, i) => (
+                <div key={i} className={`p-3 rounded-xl border ${answers[i] === q.ans ? "border-green-500/30 bg-green-500/5" : "border-red-500/30 bg-red-500/5"}`}>
+                  <p className="text-sm text-white mb-1">{i + 1}. {q.q}</p>
+                  <p className="text-xs text-gray-400">{q.explanation}</p>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => startTest(activeTest)} className="flex-1 bg-violet-600 hover:bg-violet-700 text-white py-2.5 rounded-xl text-sm font-medium transition-colors">
+                Retry Test
+              </button>
+              <button onClick={() => { setTestStarted(false); setActiveTest(null); }} className="flex-1 bg-white/10 hover:bg-white/20 text-white py-2.5 rounded-xl text-sm font-medium transition-colors">
+                Back to Tests
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const q = SAMPLE_QUESTIONS[currentQ];
+    const answered = answers[currentQ];
+
+    return (
+      <div className="min-h-screen bg-[#0d0d1a] text-white p-4 md:p-6">
+        <div className="max-w-2xl mx-auto">
+          <div className="flex items-center justify-between mb-6">
+            <button onClick={() => setTestStarted(false)} className="text-gray-400 hover:text-white text-sm">← Exit Test</button>
+            <div className="text-center">
+              <p className="text-sm font-semibold text-white">{activeTest.title}</p>
+              <p className="text-xs text-gray-400">{currentQ + 1} / {SAMPLE_QUESTIONS.length}</p>
+            </div>
+            <div className="bg-violet-600/20 text-violet-300 text-sm px-3 py-1 rounded-lg font-mono">
+              {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, "0")}
+            </div>
+          </div>
+
+          <div className="w-full h-1 bg-white/10 rounded-full mb-6">
+            <div className="h-full bg-violet-500 rounded-full transition-all" style={{ width: `${((currentQ + 1) / SAMPLE_QUESTIONS.length) * 100}%` }} />
+          </div>
+
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-4">
+            <p className="text-lg font-medium text-white leading-relaxed">{q.q}</p>
+          </div>
+
+          <div className="space-y-3 mb-6">
+            {q.options.map((opt, i) => {
+              let cls = "bg-white/5 border-white/10 text-gray-200 hover:bg-white/10 hover:border-violet-500/40";
+              if (answered !== undefined) {
+                if (i === q.ans) cls = "bg-green-500/15 border-green-500/50 text-green-300";
+                else if (i === answered && i !== q.ans) cls = "bg-red-500/15 border-red-500/50 text-red-300";
+                else cls = "bg-white/5 border-white/10 text-gray-500";
+              }
+              return (
+                <button key={i} onClick={() => selectAnswer(i)}
+                  className={`w-full text-left p-4 rounded-xl border transition-all flex items-center gap-3 ${cls}`}>
+                  <span className="w-7 h-7 rounded-full border border-current flex items-center justify-center text-xs font-medium flex-shrink-0">
+                    {["A", "B", "C", "D"][i]}
+                  </span>
+                  <span className="text-sm">{opt}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {answered !== undefined && (
+            <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-4">
+              <p className="text-xs text-gray-400 mb-1">Explanation</p>
+              <p className="text-sm text-gray-200">{q.explanation}</p>
+            </div>
+          )}
+
+          <div className="flex gap-3">
+            {currentQ > 0 && (
+              <button onClick={() => setCurrentQ((p) => p - 1)} className="flex-1 bg-white/10 hover:bg-white/20 text-white py-3 rounded-xl text-sm font-medium transition-colors">
+                ← Previous
+              </button>
+            )}
+            {currentQ < SAMPLE_QUESTIONS.length - 1 ? (
+              <button onClick={() => setCurrentQ((p) => p + 1)} disabled={answered === undefined}
+                className={`flex-1 py-3 rounded-xl text-sm font-medium transition-colors ${answered !== undefined ? "bg-violet-600 hover:bg-violet-700 text-white" : "bg-white/5 text-gray-600 cursor-not-allowed"}`}>
+                Next →
+              </button>
+            ) : (
+              <button onClick={finishTest} disabled={answered === undefined}
+                className={`flex-1 py-3 rounded-xl text-sm font-medium transition-colors ${answered !== undefined ? "bg-green-600 hover:bg-green-700 text-white" : "bg-white/5 text-gray-600 cursor-not-allowed"}`}>
+                Finish Test ✓
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#0d0d1a] text-white">
+      <div className="p-4 md:p-6 max-w-[1200px] mx-auto">
+
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-white">Mock Tests</h1>
+            <p className="text-sm text-gray-400 mt-0.5">Chapter-wise & full length tests with solutions</p>
+          </div>
+          <div className="flex gap-3">
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { label: "Tests Available", value: TESTS.length, color: "text-violet-400" },
+                { label: "Attempted", value: "3", color: "text-blue-400" },
+                { label: "Best Score", value: "82%", color: "text-green-400" },
+              ].map((s) => (
+                <div key={s.label} className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-center">
+                  <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
+                  <p className="text-xs text-gray-400">{s.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex gap-3 mb-5 flex-wrap">
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍  Search tests..."
+            className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white placeholder-gray-500 outline-none focus:border-violet-500/50 flex-1 min-w-[200px]" />
+          <div className="flex gap-2 flex-wrap">
+            {SUBJECTS_LIST.map((s) => (
+              <button key={s} onClick={() => setFilter(s)}
+                className={`px-3 py-2 rounded-xl text-xs font-medium transition-all ${filter === s ? "bg-violet-600 text-white" : "bg-white/5 text-gray-400 hover:bg-white/10 border border-white/10"}`}>
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filtered.map((test) => (
+            <div key={test.id} className="bg-white/5 border border-white/10 rounded-2xl p-5 hover:border-violet-500/40 transition-all group">
+              <div className="flex items-start justify-between mb-3">
+                <span className="text-xs font-medium px-2 py-1 rounded-lg" style={{ background: SUB_COLOR[test.subject] + "22", color: SUB_COLOR[test.subject] }}>
+                  {test.subject}
+                </span>
+                <span className={`text-xs font-medium px-2 py-1 rounded-lg ${DIFF_COLOR[test.difficulty]}`}>
+                  {test.difficulty}
+                </span>
+              </div>
+              <h3 className="font-semibold text-white text-sm mb-3 group-hover:text-violet-300 transition-colors">{test.title}</h3>
+              <div className="flex gap-4 text-xs text-gray-400 mb-4">
+                <span>📋 {test.questions} Qs</span>
+                <span>⏱ {test.time} min</span>
+                <span>👥 {test.attempts.toLocaleString()} attempts</span>
+              </div>
+              <div className="mb-4">
+                <div className="flex justify-between text-xs text-gray-400 mb-1">
+                  <span>Avg Score</span><span>{test.avgScore}%</span>
+                </div>
+                <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                  <div className="h-full rounded-full bg-gradient-to-r from-violet-500 to-blue-500" style={{ width: `${test.avgScore}%` }} />
+                </div>
+              </div>
+              <button onClick={() => startTest(test)}
+                className="w-full bg-violet-600 hover:bg-violet-700 active:scale-[0.98] text-white py-2.5 rounded-xl text-sm font-medium transition-all">
+                Start Test →
+              </button>
+            </div>
+          ))}
+        </div>
+
+        {filtered.length === 0 && (
+          <div className="text-center py-16">
+            <p className="text-4xl mb-3">🔍</p>
+            <p className="text-gray-400">No tests found. Try a different filter.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
