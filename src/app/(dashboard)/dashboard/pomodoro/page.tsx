@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Maximize2, Minimize2, Music } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -18,18 +18,51 @@ import { awardXp } from '@/lib/gamification/xp-service';
 import { cn } from '@/lib/utils';
 import type { PomodoroPhase } from '@/lib/firestore/pomodoro-schema';
 
-// Royalty-free ambient loops would be hosted in /public; placeholder list here.
+// Audio files should be placed at these paths under /public.
 const TRACKS = [
-  { id: 'none', label: 'Off' },
-  { id: 'lofi', label: 'Lo-fi' },
-  { id: 'rain', label: 'Rain' },
-  { id: 'forest', label: 'Forest' }
+  { id: 'none', label: 'Off', src: null as string | null },
+  { id: 'lofi', label: 'Lo-fi', src: '/audio/lofi.mp3' },
+  { id: 'rain', label: 'Rain', src: '/audio/rain.mp3' },
+  { id: 'forest', label: 'Forest', src: '/audio/forest.mp3' }
 ];
 
 export default function PomodoroPage() {
   const { user } = useAuth();
   const { settings, sessions, setSessions, fullScreen, setFullScreen } = usePomodoroStore();
   const [track, setTrack] = useState('none');
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    const selected = TRACKS.find((t) => t.id === track);
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (!selected?.src) {
+      audio.pause();
+      audio.removeAttribute('src');
+      return;
+    }
+
+    if (audio.src.endsWith(selected.src)) {
+      audio.play().catch(() => {
+        toast.error('Could not play audio. Check that the file exists in /public/audio.');
+      });
+      return;
+    }
+
+    audio.src = selected.src;
+    audio.loop = true;
+    audio.volume = 0.5;
+    audio.play().catch(() => {
+      toast.error('Could not play audio. Check that the file exists in /public/audio.');
+    });
+  }, [track]);
+
+  useEffect(() => {
+    return () => {
+      audioRef.current?.pause();
+    };
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -41,7 +74,6 @@ export default function PomodoroPage() {
     (phase: PomodoroPhase, durationSeconds: number) => {
       if (user) {
         recordSession(user.uid, { phase, durationSeconds, completedSeconds: durationSeconds, subject: null, completed: true });
-        // Award XP only for completed focus sessions.
         if (phase === 'focus') void awardXp(user.uid, 'completePomodoro');
       }
       toast.success(phase === 'focus' ? 'Focus session complete! +15 XP' : 'Break over - back to it!');
@@ -69,6 +101,7 @@ export default function PomodoroPage() {
   if (fullScreen) {
     return (
       <div className="fixed inset-0 z-50 grid place-items-center bg-background">
+        <audio ref={audioRef} />
         <Button variant="ghost" size="icon" className="absolute right-6 top-6" aria-label="Exit full screen" onClick={() => setFullScreen(false)}>
           <Minimize2 className="h-5 w-5" />
         </Button>
@@ -79,6 +112,7 @@ export default function PomodoroPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      <audio ref={audioRef} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Pomodoro</h1>
@@ -108,7 +142,7 @@ export default function PomodoroPage() {
                 </button>
               ))}
             </div>
-            <p className="mt-2 text-xs text-muted-foreground">Audio files ship in /public; selection persists per session.</p>
+            <p className="mt-2 text-xs text-muted-foreground">Audio files ship in /public/audio; selection persists per session.</p>
           </GlassCard>
           <GlassCard>
             <h2 className="mb-1 font-semibold">Cycle</h2>
