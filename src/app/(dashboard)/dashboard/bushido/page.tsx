@@ -2,6 +2,37 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Fraunces, Work_Sans } from 'next/font/google';
+import {
+  Footprints,
+  Flame,
+  TrendingUp,
+  Trophy,
+  Zap,
+  Link2,
+  ShieldCheck,
+  Brain,
+  BookOpen,
+  Mail,
+  Shield,
+  Sunrise,
+  Check,
+  X,
+  Lock,
+  Unlock,
+  Compass,
+  AlertTriangle,
+  AlertOctagon,
+  Clock,
+  ArrowRight,
+  ChevronLeft,
+  ChevronRight,
+  RotateCcw,
+  CalendarCheck,
+  Target,
+  PieChart,
+  Quote as QuoteGlyph,
+  type LucideIcon,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const fraunces = Fraunces({
@@ -42,6 +73,7 @@ interface FutureLetterEntry {
   sealedAt: string;
   unlockAt: string;
   opened: boolean;
+  openedAt: string | null;
 }
 
 interface ProgressState {
@@ -65,8 +97,7 @@ interface Challenge {
   trait: string;
 }
 
-interface Quote {
-  jp: string;
+interface QuoteItem {
   en: string;
   hi: string;
 }
@@ -104,7 +135,7 @@ interface Badge {
   titleHi: string;
   descEn: string;
   descHi: string;
-  icon: string;
+  icon: LucideIcon;
   condition: (s: Stats) => boolean;
 }
 
@@ -113,7 +144,7 @@ type DayStatus = 'unstarted' | 'locked' | 'available' | 'completed' | 'missed';
 
 /* ============================== CONSTANTS ============================== */
 
-const STORAGE_KEY = 'bushido-x-v1';
+const STORAGE_KEY = 'bushido-x-v2';
 
 const CHALLENGES: Challenge[] = [
   { day: 1, en: 'Wake up at 5:30 AM without snooze. Drink water first.', hi: 'Bina snooze ke 5:30 AM uthna. Pehle paani peeyo.', trait: 'Discipline / Anushasan' },
@@ -132,20 +163,20 @@ const CHALLENGES: Challenge[] = [
   { day: 14, en: 'Review your last two weeks. What improved? Write it.', hi: 'Apne 2 hafte review karo. Kya sudhra? Likho.', trait: 'Reflection / Atmachintan' },
   { day: 15, en: '3 hours of deep work in two sessions. Phone away.', hi: '2 sessions mein 3 ghante deep work. Phone door.', trait: 'Deep Focus / Gehri Ekagrata' },
   { day: 16, en: '30 pushups and 10 minutes of meditation or silence.', hi: '30 pushups aur 10 min meditation ya khamoshi.', trait: 'Stillness / Shanti' },
-  { day: 17, en: 'Eat only until 80% full today (Hara Hachi Bu).', hi: 'Aaj sirf 80% pet bharo (Hara Hachi Bu).', trait: 'Restraint / Sanyam' },
+  { day: 17, en: 'Eat only until 80% full today. Stop before you feel stuffed.', hi: 'Aaj sirf 80% pet bharo. Pura bharne se pehle ruk jao.', trait: 'Restraint / Sanyam' },
   { day: 18, en: 'No complaints today. Zero. Accept everything.', hi: 'Aaj zero complaining. Sab accept karo.', trait: 'Acceptance / Sweekriti' },
   { day: 19, en: 'Teach someone one thing you learned this week.', hi: 'Is hafte jo seekha usme se kuch kisi ko sikhao.', trait: 'Wisdom Sharing / Gyan Daan' },
   { day: 20, en: 'Full digital detox 6 AM to 6 PM. Essential only.', hi: 'Subah 6 se sham 6 - sirf zaroori kaam ke liye phone.', trait: 'Detachment / Vairagya' },
   { day: 21, en: 'Write your before vs after. Who are you now?', hi: 'Pehle aur ab likho. Ab tum kaun ho?', trait: 'Transformation / Parivartan' },
 ];
 
-const QUOTES: Quote[] = [
-  { jp: '七転び八起き', en: 'Fall seven times, rise eight.', hi: 'Saat baar giro, aath baar utho.' },
-  { jp: '今日の我に勝つ', en: 'Win against yourself today.', hi: 'Aaj khud se jeet jao.' },
-  { jp: '千里の道も一歩から', en: 'A thousand mile journey starts with one step.', hi: 'Hazaar mile ka safar ek kadam se shuru hota hai.' },
-  { jp: '継続は力なり', en: 'Continuity is power.', hi: 'Lagataar karna hi taakat hai.' },
-  { jp: '心技体', en: 'Mind, technique, and body in harmony.', hi: 'Mann, kaushal aur sharir ka santulan.' },
-  { jp: '諦めない', en: 'Never give up.', hi: 'Kabhi haar mat maano.' },
+const QUOTES: QuoteItem[] = [
+  { en: 'Discipline is choosing what you want most over what you want right now.', hi: 'Anushasan ka matlab hai - jo abhi chahiye usse zyada, jo sabse zyada chahiye use chunna.' },
+  { en: 'Small actions, repeated daily, build an unbreakable will.', hi: 'Chhoti aadatein, roz dohrayi gayi, ek atoot iraada banati hain.' },
+  { en: 'You do not rise to the level of your goals, you fall to the level of your habits.', hi: 'Tum apne goals ke star tak nahi uthte, apni aadaton ke star tak girte ho.' },
+  { en: 'The path is not easy, but every step forward is a victory.', hi: 'Raasta aasaan nahi, par har kadam jeet hai.' },
+  { en: 'Honor is built in the moments no one is watching.', hi: 'Samman un palon mein banta hai jab koi dekh nahi raha hota.' },
+  { en: 'Comfort is the enemy of growth.', hi: 'Aaram, vikas ka dushman hai.' },
 ];
 
 const RULES: Rule[] = [
@@ -162,31 +193,31 @@ const RULES: Rule[] = [
 ];
 
 const BADGES: Badge[] = [
-  { id: 'first-step', titleEn: 'First Step', titleHi: 'Pehla Kadam', descEn: 'You completed Day 1.', descHi: 'Tumne Din 1 poora kiya.', icon: '道', condition: (s) => s.doneCount >= 1 },
-  { id: 'week-warrior', titleEn: 'Week Warrior', titleHi: 'Hafte ka Yodha', descEn: '7 days completed.', descHi: '7 din poore.', icon: '炎', condition: (s) => s.doneCount >= 7 },
-  { id: 'halfway-samurai', titleEn: 'Halfway Samurai', titleHi: 'Aadhe Raaste ka Samurai', descEn: '11 or more days completed.', descHi: '11+ din poore.', icon: '半', condition: (s) => s.doneCount >= 11 },
-  { id: 'full-bushido', titleEn: 'Full Bushido', titleHi: 'Sampoorna Bushido', descEn: 'All 21 days completed.', descHi: 'Sabhi 21 din poore.', icon: '満', condition: (s) => s.doneCount >= 21 },
-  { id: 'streak-7', titleEn: 'Seven Day Fire', titleHi: 'Saat Din ki Aag', descEn: 'A 7-day streak.', descHi: '7 din ka streak.', icon: '結', condition: (s) => s.bestStreak >= 7 },
-  { id: 'streak-14', titleEn: 'Unbroken Chain', titleHi: 'Atoot Zanjeer', descEn: 'A 14-day streak.', descHi: '14 din ka streak.', icon: '鎖', condition: (s) => s.bestStreak >= 14 },
-  { id: 'iron-honor', titleEn: 'Iron Honor', titleHi: 'Loha Jaisa Samman', descEn: 'Honor score reached 95 or higher.', descHi: 'Honor score 95+ tak pahuncha.', icon: '誉', condition: (s) => s.honor >= 95 },
-  { id: 'deep-worker', titleEn: 'Deep Worker', titleHi: 'Gehra Karyakarta', descEn: '300+ minutes of deep work logged.', descHi: '300+ minute ka deep work.', icon: '集', condition: (s) => s.totalDeepWork >= 300 },
-  { id: 'reflective-mind', titleEn: 'Reflective Mind', titleHi: 'Chintansheel Mann', descEn: '10 or more journal reflections written.', descHi: '10+ journal entries likhi.', icon: '鏡', condition: (s) => s.reflectionCount >= 10 },
-  { id: 'letter-sealed', titleEn: 'Letter to Tomorrow', titleHi: 'Kal ke Naam Patra', descEn: 'Sealed a letter to your future self.', descHi: 'Bhavishya ke khud ko ek patra seal kiya.', icon: '封', condition: (s) => s.lettersSealed >= 1 },
-  { id: 'unbroken-path', titleEn: 'Unbroken Path', titleHi: 'Atoot Marg', descEn: '10+ days completed with zero misses.', descHi: '10+ din, ek bhi din nahi chuka.', icon: '心', condition: (s) => s.doneCount >= 10 && s.missedCount === 0 },
-  { id: 'comeback', titleEn: 'Return of Light', titleHi: 'Roshni ki Wapsi', descEn: 'Recovered your honor after it fell below 50.', descHi: 'Honor 50 se neeche girne ke baad wapas uthaya.', icon: '光', condition: (s) => s.minHonor < 50 && s.honor >= 80 },
+  { id: 'first-step', titleEn: 'First Step', titleHi: 'Pehla Kadam', descEn: 'You completed Day 1.', descHi: 'Tumne Din 1 poora kiya.', icon: Footprints, condition: (s) => s.doneCount >= 1 },
+  { id: 'week-warrior', titleEn: 'Week Warrior', titleHi: 'Hafte ka Yodha', descEn: '7 days completed.', descHi: '7 din poore.', icon: Flame, condition: (s) => s.doneCount >= 7 },
+  { id: 'midpoint-warrior', titleEn: 'Midpoint Warrior', titleHi: 'Aadhe Raaste ka Yodha', descEn: '11 or more days completed.', descHi: '11+ din poore.', icon: TrendingUp, condition: (s) => s.doneCount >= 11 },
+  { id: 'path-complete', titleEn: 'Path Complete', titleHi: 'Sampoorna Marg', descEn: 'All 21 days completed.', descHi: 'Sabhi 21 din poore.', icon: Trophy, condition: (s) => s.doneCount >= 21 },
+  { id: 'streak-7', titleEn: 'Seven Day Fire', titleHi: 'Saat Din ki Aag', descEn: 'A 7-day streak.', descHi: '7 din ka streak.', icon: Zap, condition: (s) => s.bestStreak >= 7 },
+  { id: 'streak-14', titleEn: 'Unbroken Chain', titleHi: 'Atoot Zanjeer', descEn: 'A 14-day streak.', descHi: '14 din ka streak.', icon: Link2, condition: (s) => s.bestStreak >= 14 },
+  { id: 'iron-honor', titleEn: 'Iron Honor', titleHi: 'Loha Jaisa Samman', descEn: 'Honor score reached 95 or higher.', descHi: 'Honor score 95+ tak pahuncha.', icon: ShieldCheck, condition: (s) => s.honor >= 95 },
+  { id: 'deep-worker', titleEn: 'Deep Worker', titleHi: 'Gehra Karyakarta', descEn: '300+ minutes of deep work logged.', descHi: '300+ minute ka deep work.', icon: Brain, condition: (s) => s.totalDeepWork >= 300 },
+  { id: 'reflective-mind', titleEn: 'Reflective Mind', titleHi: 'Chintansheel Mann', descEn: '10 or more journal reflections written.', descHi: '10+ journal entries likhi.', icon: BookOpen, condition: (s) => s.reflectionCount >= 10 },
+  { id: 'letter-sealed', titleEn: 'Letter to Tomorrow', titleHi: 'Kal ke Naam Patra', descEn: 'Sealed a letter to your future self.', descHi: 'Bhavishya ke khud ko ek patra seal kiya.', icon: Mail, condition: (s) => s.lettersSealed >= 1 },
+  { id: 'unbroken-path', titleEn: 'Unbroken Path', titleHi: 'Atoot Marg', descEn: '10+ days completed with zero misses.', descHi: '10+ din, ek bhi din nahi chuka.', icon: Shield, condition: (s) => s.doneCount >= 10 && s.missedCount === 0 },
+  { id: 'comeback', titleEn: 'Return of Light', titleHi: 'Roshni ki Wapsi', descEn: 'Recovered your honor after it fell below 50.', descHi: 'Honor 50 se neeche girne ke baad wapas uthaya.', icon: Sunrise, condition: (s) => s.minHonor < 50 && s.honor >= 80 },
 ];
 
 const RANKS: { min: number; en: string; hi: string }[] = [
-  { min: 1, en: 'Ronin', hi: 'Akela Yodha' },
-  { min: 3, en: 'Ashigaru', hi: 'Paidal Sainik' },
-  { min: 5, en: 'Bushi', hi: 'Yodha' },
-  { min: 7, en: 'Kenshi', hi: 'Talwarbaaz' },
-  { min: 9, en: 'Samurai', hi: 'Samurai' },
-  { min: 11, en: 'Hatamoto', hi: 'Vishwaspatra' },
-  { min: 14, en: "Daimyo's Retainer", hi: 'Daimyo ka Sevak' },
-  { min: 17, en: "Shogun's Blade", hi: 'Shogun ki Talwar' },
-  { min: 21, en: 'Sensei', hi: 'Guru' },
-  { min: 26, en: 'Living Legend', hi: 'Jeevit Kissa' },
+  { min: 1, en: 'Beginner', hi: 'Shuruati' },
+  { min: 3, en: 'Disciple', hi: 'Sadhak' },
+  { min: 5, en: 'Warrior', hi: 'Yodha' },
+  { min: 7, en: 'Tactician', hi: 'Kushal Yodha' },
+  { min: 9, en: 'Guardian', hi: 'Rakshak' },
+  { min: 11, en: 'Vanguard', hi: 'Agrani' },
+  { min: 14, en: 'Elite Warrior', hi: 'Visisht Yodha' },
+  { min: 17, en: 'Master', hi: 'Guru' },
+  { min: 21, en: 'Grandmaster', hi: 'Maha Guru' },
+  { min: 26, en: 'Living Legend', hi: 'Mahan Vyakti' },
 ];
 
 const TABS: { id: TabId; label: string }[] = [
@@ -417,27 +448,39 @@ function SectionCard({ children, className }: { children: React.ReactNode; class
   return <div className={cn('rounded-2xl border border-[#27272f] bg-[#15151A] p-5 sm:p-6', className)}>{children}</div>;
 }
 
-function StatTile({ label, value, accent }: { label: string; value: string | number; accent?: string }) {
+function SectionHeading({ icon: Icon, children }: { icon: LucideIcon; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-[#27272f] bg-[#15151A] p-4 text-center">
-      <div className={cn('font-mono text-2xl font-bold', accent ?? 'text-[#EDEAE3]')}>{value}</div>
-      <div className="text-[11px] text-[#8C8A86] mt-1 tracking-wide">{label}</div>
+    <div className="flex items-center gap-2 mb-4">
+      <Icon size={14} className="text-[#8C8A86]" />
+      <h3 className="text-sm tracking-widest text-[#8C8A86]">{children}</h3>
     </div>
   );
 }
 
-function HankoStamp({ char = '完', size = 64, cracked = false, pulse = false }: { char?: string; size?: number; cracked?: boolean; pulse?: boolean }) {
+function StatTile({ label, value, accent, icon: Icon }: { label: string; value: string | number; accent?: string; icon?: LucideIcon }) {
+  return (
+    <div className="rounded-xl border border-[#27272f] bg-[#15151A] p-4 text-center space-y-1.5">
+      {Icon && <Icon size={16} className={cn('mx-auto', accent ?? 'text-[#8C8A86]')} />}
+      <div className={cn('font-mono text-2xl font-bold', accent ?? 'text-[#EDEAE3]')}>{value}</div>
+      <div className="text-[11px] text-[#8C8A86] tracking-wide">{label}</div>
+    </div>
+  );
+}
+
+function StampSeal({ icon: Icon, size = 64, cracked = false, pulse = false }: { icon: LucideIcon; size?: number; cracked?: boolean; pulse?: boolean }) {
   const color = cracked ? '#6B6965' : '#D9472E';
   return (
-    <svg viewBox="0 0 100 100" width={size} height={size} className={cn(pulse && 'hanko-pop')}>
-      <g filter="url(#hankoInk)">
-        <circle cx="50" cy="50" r="42" fill="none" stroke={color} strokeWidth="6" opacity={cracked ? 0.55 : 0.95} />
-        <text x="50" y="65" textAnchor="middle" fontSize="44" fill={color} fontFamily="serif" opacity={cracked ? 0.55 : 0.95}>
-          {char}
-        </text>
-        {cracked && <path d="M18 32 L54 50 L34 76 L78 58" stroke="#0A0A0C" strokeWidth="5" fill="none" opacity="0.85" />}
-      </g>
-    </svg>
+    <div style={{ width: size, height: size }} className={cn('relative shrink-0', pulse && 'stamp-pop')}>
+      <svg viewBox="0 0 100 100" width={size} height={size} className="absolute inset-0">
+        <g filter="url(#stampInk)">
+          <circle cx="50" cy="50" r="42" fill="none" stroke={color} strokeWidth="6" opacity={cracked ? 0.55 : 0.95} />
+          {cracked && <path d="M18 32 L54 50 L34 76 L78 58" stroke="#0A0A0C" strokeWidth="5" fill="none" opacity="0.85" />}
+        </g>
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <Icon size={size * 0.4} color={color} strokeWidth={2.5} />
+      </div>
+    </div>
   );
 }
 
@@ -612,7 +655,7 @@ export default function BushidoXPage() {
       if (!prev.draftLetter.trim()) return prev;
       const base = prev.startDate ? addDaysISO(prev.startDate, 21) : addDaysISO(todayISO(), 21);
       const unlockAt = base > todayISO() ? base : addDaysISO(todayISO(), 1);
-      const entry: FutureLetterEntry = { id: generateId(), content: prev.draftLetter, sealedAt: new Date().toISOString(), unlockAt, opened: false };
+      const entry: FutureLetterEntry = { id: generateId(), content: prev.draftLetter, sealedAt: new Date().toISOString(), unlockAt, opened: false, openedAt: null };
       let next: ProgressState = { ...prev, letters: [entry, ...prev.letters], draftLetter: '' };
       next = applyBadgeCheck(next);
       saveProgress(next);
@@ -622,7 +665,7 @@ export default function BushidoXPage() {
 
   function openLetter(id: string) {
     setProgress((prev) => {
-      const letters = prev.letters.map((l) => (l.id === id ? { ...l, opened: true } : l));
+      const letters = prev.letters.map((l) => (l.id === id ? { ...l, opened: true, openedAt: new Date().toISOString() } : l));
       const next = { ...prev, letters };
       saveProgress(next);
       return next;
@@ -641,7 +684,7 @@ export default function BushidoXPage() {
     return (
       <div className={cn('min-h-[60vh] flex items-center justify-center bg-[#0A0A0C] text-[#8C8A86]', fraunces.variable, workSans.variable)} style={{ fontFamily: 'var(--font-body), sans-serif' }}>
         <div className="text-center space-y-3">
-          <div className="text-3xl text-[#D9472E] animate-pulse">道</div>
+          <Compass size={32} className="text-[#D9472E] mx-auto animate-pulse" />
           <p className="text-sm">Loading your path...</p>
         </div>
       </div>
@@ -652,7 +695,7 @@ export default function BushidoXPage() {
     <div className={cn('min-h-screen bg-[#0A0A0C] text-[#EDEAE3]', fraunces.variable, workSans.variable)} style={{ fontFamily: 'var(--font-body), sans-serif' }}>
       <svg width="0" height="0" className="absolute">
         <defs>
-          <filter id="hankoInk" x="-20%" y="-20%" width="140%" height="140%">
+          <filter id="stampInk" x="-20%" y="-20%" width="140%" height="140%">
             <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" result="noise" seed="4" />
             <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.5" />
           </filter>
@@ -660,12 +703,12 @@ export default function BushidoXPage() {
       </svg>
 
       <style jsx global>{`
-        @keyframes hankoPop {
+        @keyframes stampPop {
           0% { transform: scale(0.3) rotate(-15deg); opacity: 0; }
           60% { transform: scale(1.15) rotate(4deg); opacity: 1; }
           100% { transform: scale(1) rotate(0deg); opacity: 1; }
         }
-        .hanko-pop { animation: hankoPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .stamp-pop { animation: stampPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
         @keyframes honorPulse {
           0%, 100% { filter: drop-shadow(0 0 0 rgba(139, 58, 47, 0)); }
           50% { filter: drop-shadow(0 0 8px rgba(139, 58, 47, 0.55)); }
@@ -693,7 +736,7 @@ export default function BushidoXPage() {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-[#D9472E] font-mono text-xs tracking-widest">武士道 X</span>
+              <span className="text-[#D9472E] font-mono text-xs tracking-widest">BUSHIDO X</span>
               <span className="text-xs text-[#5C5A56] tracking-widest">· SELF MASTERY CHALLENGE</span>
             </div>
             <h1 className="text-3xl font-bold tracking-tight" style={{ fontFamily: 'var(--font-display), serif' }}>
@@ -701,9 +744,7 @@ export default function BushidoXPage() {
             </h1>
             <p className="text-sm text-[#8C8A86] mt-0.5">21 din mein khud ko nirmit karo. / Build yourself in 21 days.</p>
           </div>
-          <div className="text-4xl select-none opacity-20" style={{ fontFamily: 'var(--font-display), serif' }}>
-            道
-          </div>
+          <Compass size={40} className="text-[#D9472E] opacity-20 shrink-0" />
         </div>
 
         {/* Tabs */}
@@ -727,22 +768,23 @@ export default function BushidoXPage() {
           <div className="space-y-6">
             {!progress.startDate ? (
               <SectionCard className="text-center py-12 space-y-5">
-                <div className="text-5xl">道</div>
+                <Compass size={48} className="mx-auto text-[#D9472E]" />
                 <h2 className="text-2xl sm:text-3xl" style={{ fontFamily: 'var(--font-display), serif' }}>
                   The Path Has Not Begun
                 </h2>
                 <p className="text-sm text-[#8C8A86] max-w-md mx-auto">
                   Bushido X tumhe 21 din mein anushasan, focus aur honor sikhayega. Shuru karne ke baad, har din ginta hai. / Bushido X builds discipline, focus and honor over 21 days. Once you begin, every day counts.
                 </p>
-                <button onClick={startChallenge} className="px-6 py-3 rounded-xl bg-[#D9472E] text-white font-medium hover:bg-[#c13b25] transition-colors">
-                  Begin the Path — Patha Shuru Karo
+                <button onClick={startChallenge} className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#D9472E] text-white font-medium hover:bg-[#c13b25] transition-colors">
+                  <Compass size={16} /> Begin the Path — Patha Shuru Karo
                 </button>
               </SectionCard>
             ) : (
               <>
                 {stats.honor < 50 && (
-                  <div className="rounded-xl border border-[#8B3A2F] bg-[#8B3A2F]/10 px-4 py-3 text-sm text-[#e8a99e] banner-pulse">
-                    ⚠ Tumhara honor khatre mein hai. Aaj ka challenge poora karo. / Your honor is in danger. Complete today&apos;s challenge to restore it.
+                  <div className="rounded-xl border border-[#8B3A2F] bg-[#8B3A2F]/10 px-4 py-3 text-sm text-[#e8a99e] banner-pulse flex items-center gap-2.5">
+                    <AlertTriangle size={16} className="shrink-0" />
+                    <span>Tumhara honor khatre mein hai. Aaj ka challenge poora karo. / Your honor is in danger. Complete today&apos;s challenge to restore it.</span>
                   </div>
                 )}
 
@@ -768,23 +810,23 @@ export default function BushidoXPage() {
                 </SectionCard>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <StatTile label="Din Poore / Days" value={`${stats.doneCount}/21`} />
-                  <StatTile label="Streak" value={stats.currentStreak} accent="text-[#D9472E]" />
-                  <StatTile label="Consistency" value={`${stats.consistency}%`} accent="text-[#4F8767]" />
-                  <StatTile label="Deep Work" value={`${Math.round((stats.totalDeepWork / 60) * 10) / 10}h`} accent="text-[#C9A24B]" />
+                  <StatTile label="Din Poore / Days" value={`${stats.doneCount}/21`} icon={CalendarCheck} />
+                  <StatTile label="Streak" value={stats.currentStreak} accent="text-[#D9472E]" icon={Flame} />
+                  <StatTile label="Consistency" value={`${stats.consistency}%`} accent="text-[#4F8767]" icon={Target} />
+                  <StatTile label="Deep Work" value={`${Math.round((stats.totalDeepWork / 60) * 10) / 10}h`} accent="text-[#C9A24B]" icon={Brain} />
                 </div>
 
                 {stats.completionRate === 100 ? (
                   <SectionCard className="text-center py-10 space-y-4">
-                    <HankoStamp char="満" size={72} />
+                    <StampSeal icon={Trophy} size={72} />
                     <h2 className="text-2xl" style={{ fontFamily: 'var(--font-display), serif' }}>
                       The Path is Complete
                     </h2>
                     <p className="text-sm text-[#8C8A86] max-w-md mx-auto">
                       Tumne 21 din ka Bushido path poora kar liya. Final honor: {progress.honor}. / You have completed the 21-day Bushido path. Final honor: {progress.honor}.
                     </p>
-                    <button onClick={() => setActiveTab('letter')} className="px-5 py-2.5 rounded-lg border border-[#C9A24B]/50 text-[#C9A24B] text-sm hover:bg-[#C9A24B]/10">
-                      Write to Your Future Self →
+                    <button onClick={() => setActiveTab('letter')} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg border border-[#C9A24B]/50 text-[#C9A24B] text-sm hover:bg-[#C9A24B]/10">
+                      Write to Your Future Self <ArrowRight size={14} />
                     </button>
                   </SectionCard>
                 ) : (
@@ -792,15 +834,19 @@ export default function BushidoXPage() {
                     <SectionCard>
                       <div className="flex items-center justify-between mb-3">
                         <span className="text-xs tracking-widest text-[#8C8A86]">AAJ / TODAY · DIN {currentDayNumber}</span>
-                        {getDay(progress, currentDayNumber).completed && <span className="text-xs text-[#4F8767]">✓ Poora hua</span>}
+                        {getDay(progress, currentDayNumber).completed && (
+                          <span className="text-xs text-[#4F8767] inline-flex items-center gap-1">
+                            <Check size={12} /> Poora hua
+                          </span>
+                        )}
                       </div>
                       <p className="text-base font-medium mb-1">{CHALLENGES[currentDayNumber - 1].en}</p>
                       <p className="text-sm text-[#8C8A86] mb-4">{CHALLENGES[currentDayNumber - 1].hi}</p>
                       <button
                         onClick={() => { setActiveTab('tracker'); setOpenDay(currentDayNumber); }}
-                        className="text-sm px-4 py-2 rounded-lg border border-[#D9472E]/50 text-[#D9472E] hover:bg-[#D9472E]/10"
+                        className="inline-flex items-center gap-1.5 text-sm px-4 py-2 rounded-lg border border-[#D9472E]/50 text-[#D9472E] hover:bg-[#D9472E]/10"
                       >
-                        View in Tracker →
+                        View in Tracker <ArrowRight size={14} />
                       </button>
                     </SectionCard>
                   )
@@ -808,9 +854,12 @@ export default function BushidoXPage() {
 
                 <SectionCard>
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm tracking-widest text-[#8C8A86]">RECENT ACHIEVEMENTS</h3>
-                    <button onClick={() => setActiveTab('achievements')} className="text-xs text-[#D9472E]">
-                      View all →
+                    <div className="flex items-center gap-2">
+                      <Trophy size={14} className="text-[#8C8A86]" />
+                      <h3 className="text-sm tracking-widest text-[#8C8A86]">RECENT ACHIEVEMENTS</h3>
+                    </div>
+                    <button onClick={() => setActiveTab('achievements')} className="text-xs text-[#D9472E] inline-flex items-center gap-1">
+                      View all <ArrowRight size={12} />
                     </button>
                   </div>
                   <div className="flex gap-3 flex-wrap">
@@ -820,9 +869,12 @@ export default function BushidoXPage() {
                     {progress.badges.slice(-4).reverse().map((id) => {
                       const b = BADGES.find((x) => x.id === id);
                       if (!b) return null;
+                      const Icon = b.icon;
                       return (
                         <div key={id} className="flex flex-col items-center gap-1 w-16">
-                          <div className="w-12 h-12 rounded-full bg-[#C9A24B]/10 border border-[#C9A24B]/40 flex items-center justify-center text-xl">{b.icon}</div>
+                          <div className="w-12 h-12 rounded-full bg-[#C9A24B]/10 border border-[#C9A24B]/40 flex items-center justify-center text-[#C9A24B]">
+                            <Icon size={20} />
+                          </div>
                           <span className="text-[10px] text-center text-[#8C8A86]">{b.titleEn}</span>
                         </div>
                       );
@@ -840,15 +892,15 @@ export default function BushidoXPage() {
             {!progress.startDate && (
               <SectionCard className="text-center py-8">
                 <p className="text-sm text-[#8C8A86] mb-4">Shuru karne ke liye Dashboard pe jao. / Go to Dashboard to begin the path.</p>
-                <button onClick={() => setActiveTab('dashboard')} className="text-sm text-[#D9472E]">
-                  Go to Dashboard →
+                <button onClick={() => setActiveTab('dashboard')} className="text-sm text-[#D9472E] inline-flex items-center gap-1">
+                  Go to Dashboard <ArrowRight size={14} />
                 </button>
               </SectionCard>
             )}
 
             <div className="flex justify-end">
-              <button onClick={resetProgress} className="text-xs text-[#8C8A86] hover:text-[#8B3A2F] border border-[#27272f] rounded-lg px-3 py-1.5">
-                Reset Path / Phir Shuru Karo
+              <button onClick={resetProgress} className="inline-flex items-center gap-1.5 text-xs text-[#8C8A86] hover:text-[#8B3A2F] border border-[#27272f] rounded-lg px-3 py-1.5">
+                <RotateCcw size={12} /> Reset Path / Phir Shuru Karo
               </button>
             </div>
 
@@ -870,9 +922,9 @@ export default function BushidoXPage() {
                     )}
                   >
                     {status !== 'completed' && status !== 'missed' && <span className="font-mono text-xs text-[#8C8A86]">{day}</span>}
-                    {status === 'completed' && <HankoStamp size={40} pulse={stampingDay === day} />}
-                    {status === 'missed' && <HankoStamp size={40} cracked />}
-                    {status === 'locked' && <span className="absolute bottom-1 text-[9px] text-[#5C5A56]">🔒</span>}
+                    {status === 'completed' && <StampSeal icon={Check} size={40} pulse={stampingDay === day} />}
+                    {status === 'missed' && <StampSeal icon={X} size={40} cracked />}
+                    {status === 'locked' && <Lock size={10} className="absolute bottom-1.5 text-[#5C5A56]" />}
                   </button>
                 );
               })}
@@ -887,8 +939,8 @@ export default function BushidoXPage() {
                 <SectionCard className="space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="font-mono text-sm text-[#D9472E]">DIN {openDay} / DAY {openDay}</span>
-                    <button onClick={() => setOpenDay(null)} className="text-xs text-[#8C8A86] hover:text-[#EDEAE3]">
-                      Band Karo ✕
+                    <button onClick={() => setOpenDay(null)} className="inline-flex items-center gap-1 text-xs text-[#8C8A86] hover:text-[#EDEAE3]">
+                      <X size={14} /> Band Karo
                     </button>
                   </div>
 
@@ -901,26 +953,35 @@ export default function BushidoXPage() {
                   </div>
 
                   {(status === 'locked' || status === 'unstarted') && (
-                    <p className="text-xs text-[#5C5A56]">Yeh din abhi locked hai. Pehle aaj ka din poora karo. / This day is still locked. Complete today&apos;s challenge first.</p>
+                    <p className="text-xs text-[#5C5A56] flex items-start gap-1.5">
+                      <Lock size={12} className="mt-0.5 shrink-0" />
+                      Yeh din abhi locked hai. Pehle aaj ka din poora karo. / This day is still locked. Complete today&apos;s challenge first.
+                    </p>
                   )}
                   {status === 'missed' && !entry.completed && (
-                    <p className="text-xs text-[#c98074]">Yeh din chhoot gaya — honor mein -8 ka asar hua. Ab bhi poora kar sakte ho. / This day was missed, honor took an -8 penalty. You can still complete it.</p>
+                    <p className="text-xs text-[#c98074] flex items-start gap-1.5">
+                      <AlertOctagon size={12} className="mt-0.5 shrink-0" />
+                      Yeh din chhoot gaya — honor mein -8 ka asar hua. Ab bhi poora kar sakte ho. / This day was missed, honor took an -8 penalty. You can still complete it.
+                    </p>
                   )}
 
                   {canAct && (
                     <button
                       onClick={() => toggleDay(openDay)}
                       className={cn(
-                        'w-full px-4 py-3 rounded-lg text-sm font-medium transition-colors',
+                        'w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-colors',
                         entry.completed ? 'border border-[#D9472E]/50 text-[#D9472E] hover:bg-[#D9472E]/10' : 'bg-[#D9472E] text-white hover:bg-[#c13b25]'
                       )}
                     >
-                      {entry.completed ? '✓ Complete — Undo Karo' : 'Hanko Lagao — Din Complete! ✓'}
+                      <Check size={16} />
+                      {entry.completed ? 'Complete — Undo Karo' : 'Mark Complete — Stamp Lagao'}
                     </button>
                   )}
 
                   <div className="pt-2 border-t border-[#27272f]">
-                    <label className="text-xs uppercase tracking-widest text-[#8C8A86]">Deep Work (minutes)</label>
+                    <label className="text-xs uppercase tracking-widest text-[#8C8A86] flex items-center gap-1.5">
+                      <Clock size={12} /> Deep Work (minutes)
+                    </label>
                     <input
                       type="number"
                       min={0}
@@ -932,7 +993,9 @@ export default function BushidoXPage() {
                   </div>
 
                   <div>
-                    <label className="text-xs uppercase tracking-widest text-[#8C8A86]">Reflection / Atmaparikshan</label>
+                    <label className="text-xs uppercase tracking-widest text-[#8C8A86] flex items-center gap-1.5">
+                      <BookOpen size={12} /> Reflection / Atmaparikshan
+                    </label>
                     <textarea
                       value={entry.reflection}
                       onChange={(e) => saveReflection(openDay, e.target.value)}
@@ -950,7 +1013,9 @@ export default function BushidoXPage() {
         {/* ===================== JOURNAL ===================== */}
         {activeTab === 'journal' && (
           <div className="space-y-4">
-            <p className="text-sm text-[#8C8A86]">Tumhari atma-chintan ki diary. / Your reflection journal.</p>
+            <p className="text-sm text-[#8C8A86] flex items-center gap-2">
+              <BookOpen size={14} /> Tumhari atma-chintan ki diary. / Your reflection journal.
+            </p>
             {stats.reflectionCount === 0 ? (
               <SectionCard className="text-center py-10">
                 <p className="text-sm text-[#5C5A56]">
@@ -969,7 +1034,11 @@ export default function BushidoXPage() {
                     </div>
                     <p className="text-xs text-[#C9A24B] mb-2">{CHALLENGES[day - 1].trait}</p>
                     <p className="text-sm text-[#EDEAE3] whitespace-pre-wrap">{entry.reflection}</p>
-                    {entry.deepWorkMinutes > 0 && <p className="text-[11px] text-[#8C8A86] mt-2">⏱ {entry.deepWorkMinutes} min deep work</p>}
+                    {entry.deepWorkMinutes > 0 && (
+                      <p className="text-[11px] text-[#8C8A86] mt-2 flex items-center gap-1">
+                        <Clock size={11} /> {entry.deepWorkMinutes} min deep work
+                      </p>
+                    )}
                   </SectionCard>
                 );
               })
@@ -981,7 +1050,7 @@ export default function BushidoXPage() {
         {activeTab === 'letter' && (
           <div className="space-y-6">
             <SectionCard className="space-y-4">
-              <h3 className="text-sm tracking-widest text-[#8C8A86]">WRITE TO YOUR FUTURE SELF</h3>
+              <SectionHeading icon={Mail}>WRITE TO YOUR FUTURE SELF</SectionHeading>
               <p className="text-xs text-[#5C5A56]">
                 Apne bhavishya ke khud ko ek patra likho. Seal karne ke baad yeh 21 din tak band rahega. / Write a letter to your future self. Once sealed, it stays locked for 21 days.
               </p>
@@ -997,9 +1066,9 @@ export default function BushidoXPage() {
                 <button
                   disabled={!progress.draftLetter.trim()}
                   onClick={sealLetter}
-                  className="px-5 py-2.5 rounded-lg bg-[#D9472E] text-white text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#c13b25]"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#D9472E] text-white text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#c13b25]"
                 >
-                  Seal Letter — Patra Seal Karo 封
+                  <Lock size={16} /> Seal Letter — Patra Seal Karo
                 </button>
               </div>
             </SectionCard>
@@ -1016,18 +1085,25 @@ export default function BushidoXPage() {
                     </div>
                     {!unlocked ? (
                       <div className="flex flex-col items-center py-6 gap-3">
-                        <HankoStamp char="封" size={56} />
+                        <StampSeal icon={Lock} size={56} />
                         <p className="text-xs text-[#5C5A56]">Yeh patra abhi seal hai. / This letter is still sealed.</p>
                       </div>
                     ) : !letter.opened ? (
                       <div className="flex flex-col items-center py-6 gap-3">
-                        <HankoStamp char="開" size={56} />
-                        <button onClick={() => openLetter(letter.id)} className="px-4 py-2 rounded-lg border border-[#C9A24B]/50 text-[#C9A24B] text-sm hover:bg-[#C9A24B]/10">
-                          Open Letter — Patra Kholo
+                        <StampSeal icon={Unlock} size={56} />
+                        <button onClick={() => openLetter(letter.id)} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-[#C9A24B]/50 text-[#C9A24B] text-sm hover:bg-[#C9A24B]/10">
+                          <Unlock size={14} /> Open Letter — Patra Kholo
                         </button>
                       </div>
                     ) : (
-                      <p className="text-sm whitespace-pre-wrap text-[#EDEAE3] letter-reveal">{letter.content}</p>
+                      <div className="letter-reveal">
+                        {letter.openedAt && (
+                          <span className="inline-flex items-center gap-1 text-[10px] text-[#8C8A86] mb-2">
+                            <Mail size={11} /> Opened {new Date(letter.openedAt).toLocaleDateString()}
+                          </span>
+                        )}
+                        <p className="text-sm whitespace-pre-wrap text-[#EDEAE3]">{letter.content}</p>
+                      </div>
                     )}
                   </SectionCard>
                 );
@@ -1041,15 +1117,16 @@ export default function BushidoXPage() {
           <div className="grid sm:grid-cols-2 gap-3">
             {BADGES.map((b) => {
               const unlocked = progress.badges.includes(b.id);
+              const Icon = b.icon;
               return (
                 <SectionCard key={b.id} className={cn('flex items-center gap-4', !unlocked && 'opacity-50')}>
                   <div
                     className={cn(
-                      'w-14 h-14 rounded-full flex items-center justify-center text-2xl shrink-0',
+                      'w-14 h-14 rounded-full flex items-center justify-center shrink-0',
                       unlocked ? 'bg-[#C9A24B]/10 border border-[#C9A24B]/50 text-[#C9A24B]' : 'bg-[#1B1B22] border border-[#27272f] text-[#5C5A56]'
                     )}
                   >
-                    {b.icon}
+                    <Icon size={24} />
                   </div>
                   <div>
                     <p className="text-sm font-medium">
@@ -1070,14 +1147,14 @@ export default function BushidoXPage() {
         {activeTab === 'analytics' && (
           <div className="space-y-6">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <StatTile label="Completion Rate" value={`${stats.completionRate}%`} />
-              <StatTile label="Consistency" value={`${stats.consistency}%`} accent="text-[#4F8767]" />
-              <StatTile label="Missed Days" value={stats.missedCount} accent="text-[#8B3A2F]" />
-              <StatTile label="Best Streak" value={stats.bestStreak} accent="text-[#D9472E]" />
+              <StatTile label="Completion Rate" value={`${stats.completionRate}%`} icon={PieChart} />
+              <StatTile label="Consistency" value={`${stats.consistency}%`} accent="text-[#4F8767]" icon={Target} />
+              <StatTile label="Missed Days" value={stats.missedCount} accent="text-[#8B3A2F]" icon={AlertOctagon} />
+              <StatTile label="Best Streak" value={stats.bestStreak} accent="text-[#D9472E]" icon={Flame} />
             </div>
 
             <SectionCard>
-              <h3 className="text-sm tracking-widest text-[#8C8A86] mb-4">WEEKLY BREAKDOWN</h3>
+              <SectionHeading icon={CalendarCheck}>WEEKLY BREAKDOWN</SectionHeading>
               <div className="space-y-3">
                 {[
                   ['Week 1 (Din 1-7)', stats.week1],
@@ -1098,7 +1175,7 @@ export default function BushidoXPage() {
             </SectionCard>
 
             <SectionCard>
-              <h3 className="text-sm tracking-widest text-[#8C8A86] mb-4">CONSISTENCY MAP</h3>
+              <SectionHeading icon={Target}>CONSISTENCY MAP</SectionHeading>
               <div className="grid grid-cols-7 gap-1.5">
                 {CHALLENGES.map(({ day }) => {
                   const status = getDayStatus(day);
@@ -1126,7 +1203,7 @@ export default function BushidoXPage() {
             </SectionCard>
 
             <SectionCard>
-              <h3 className="text-sm tracking-widest text-[#8C8A86] mb-4">WHEN YOU SHOW UP</h3>
+              <SectionHeading icon={Clock}>WHEN YOU SHOW UP</SectionHeading>
               <div className="grid grid-cols-4 gap-3 text-center">
                 {[
                   ['Morning', '5-12', stats.timeBuckets.morning],
@@ -1145,12 +1222,12 @@ export default function BushidoXPage() {
 
             <div className="grid sm:grid-cols-2 gap-3">
               <SectionCard>
-                <h3 className="text-sm tracking-widest text-[#8C8A86] mb-3">DEEP WORK</h3>
+                <SectionHeading icon={Brain}>DEEP WORK</SectionHeading>
                 <p className="font-mono text-3xl text-[#C9A24B]">{Math.round((stats.totalDeepWork / 60) * 10) / 10}h</p>
                 <p className="text-xs text-[#8C8A86] mt-1">{stats.totalDeepWork} total minutes across {stats.doneCount} days</p>
               </SectionCard>
               <SectionCard>
-                <h3 className="text-sm tracking-widest text-[#8C8A86] mb-3">REFLECTIONS</h3>
+                <SectionHeading icon={BookOpen}>REFLECTIONS</SectionHeading>
                 <p className="font-mono text-3xl text-[#C9A24B]">{stats.reflectionCount}</p>
                 <p className="text-xs text-[#8C8A86] mt-1">{stats.totalReflectionWords} words written · {stats.traitsCount}/21 traits practiced</p>
               </SectionCard>
@@ -1161,7 +1238,9 @@ export default function BushidoXPage() {
         {/* ===================== RULES ===================== */}
         {activeTab === 'rules' && (
           <div className="space-y-3">
-            <p className="text-sm text-[#8C8A86]">Yeh rules hain, guidelines nahi. Inhe todna honor kam karta hai. / These are rules, not guidelines. Breaking them costs honor.</p>
+            <p className="text-sm text-[#8C8A86] flex items-center gap-2">
+              <ShieldCheck size={14} /> Yeh rules hain, guidelines nahi. Inhe todna honor kam karta hai. / These are rules, not guidelines. Breaking them costs honor.
+            </p>
             {RULES.map((r, i) => (
               <SectionCard key={i} className="flex gap-4">
                 <span className="font-mono text-[#D9472E] text-sm shrink-0">{String(i + 1).padStart(2, '0')}</span>
@@ -1178,9 +1257,7 @@ export default function BushidoXPage() {
         {activeTab === 'quotes' && (
           <div className="space-y-4">
             <SectionCard className="py-8 text-center space-y-4">
-              <div className="text-4xl text-[#D9472E]" style={{ fontFamily: 'var(--font-display), serif' }}>
-                {QUOTES[qIndex].jp}
-              </div>
+              <QuoteGlyph size={36} className="mx-auto text-[#D9472E] opacity-70" />
               <p className="text-lg font-medium">{QUOTES[qIndex].en}</p>
               <p className="text-sm text-[#8C8A86]">{QUOTES[qIndex].hi}</p>
               <div className="flex items-center justify-center gap-3 pt-2">
@@ -1188,7 +1265,7 @@ export default function BushidoXPage() {
                   onClick={() => setQIndex((i) => (i - 1 + QUOTES.length) % QUOTES.length)}
                   className="w-9 h-9 rounded-full border border-[#27272f] flex items-center justify-center hover:border-[#D9472E] hover:text-[#D9472E]"
                 >
-                  ‹
+                  <ChevronLeft size={16} />
                 </button>
                 <div className="flex gap-1.5">
                   {QUOTES.map((_, i) => (
@@ -1203,7 +1280,7 @@ export default function BushidoXPage() {
                   onClick={() => setQIndex((i) => (i + 1) % QUOTES.length)}
                   className="w-9 h-9 rounded-full border border-[#27272f] flex items-center justify-center hover:border-[#D9472E] hover:text-[#D9472E]"
                 >
-                  ›
+                  <ChevronRight size={16} />
                 </button>
               </div>
             </SectionCard>
@@ -1212,9 +1289,7 @@ export default function BushidoXPage() {
 
         {/* Footer */}
         <div className="pt-8 border-t border-[#27272f] text-center space-y-2">
-          <div className="text-2xl text-[#D9472E] opacity-40" style={{ fontFamily: 'var(--font-display), serif' }}>
-            道
-          </div>
+          <Compass size={22} className="text-[#D9472E] opacity-40 mx-auto" />
           <p className="text-xs text-[#5C5A56]">21 din ke baad jo bachega — wahi asli tum ho. / After 21 days, what remains is the real you.</p>
         </div>
       </div>
