@@ -7,6 +7,7 @@ import { RecentNotesCard } from '@/components/dashboard/recent-notes-card';
 import { StudyTimeChart } from '@/components/dashboard/study-time-chart';
 import { SubjectsProgressCard } from '@/components/dashboard/subjects-progress-card';
 import { AchievementsCard } from '@/components/dashboard/achievements-card';
+import { StreakCalendarCard } from '@/components/dashboard/streak-calendar-card';
 import { useDashboardStats } from '@/hooks/use-dashboard-stats';
 import { useAuth } from '@/hooks/use-auth';
 import { formatDuration } from '@/lib/utils';
@@ -47,17 +48,8 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        {/* Goal Tracker */}
-        <Link href="/dashboard/planner" className="rounded-xl border bg-card p-4 hover:bg-accent block">
-          <h2 className="font-semibold mb-2">🎯 Goal Tracker</h2>
-          <p className="text-3xl font-bold">{stats.goalProgress}%</p>
-          <p className="text-sm text-muted-foreground">Weekly goal progress</p>
-          <div className="h-2 w-full rounded-full bg-muted overflow-hidden mt-3">
-            <div className="h-2 rounded-full bg-primary" style={{ width: `${stats.goalProgress}%` }} />
-          </div>
-        </Link>
+        <StreakCalendarCard delay={0.3} />
 
-        {/* Focus Shield */}
         <Link href="/dashboard/focus" className="rounded-xl border bg-card p-4 hover:bg-accent block">
           <h2 className="font-semibold mb-2">🛡️ Focus Shield</h2>
           <p className="text-sm text-muted-foreground mb-3">Block distractions and stay focused</p>
@@ -66,7 +58,6 @@ export default function DashboardPage() {
           </div>
         </Link>
 
-        {/* AI Assistant */}
         <div className="rounded-xl border bg-card p-4 space-y-3">
           <div className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
