@@ -1,41 +1,44 @@
 'use client';
 
-import {
-  Clock, CalendarRange, CalendarDays, Flame, Gauge,
-  GraduationCap, ListChecks, Timer
-} from 'lucide-react';
+import { Clock, CalendarRange, Flame, Gauge, Timer, ListChecks, GraduationCap, CalendarDays, Plus, Bell, Search } from 'lucide-react';
 import { StatCard } from '@/components/shared/stat-card';
-import { GlassCard } from '@/components/shared/glass-card';
 import { TodayTasksCard } from '@/components/dashboard/today-tasks-card';
 import { RecentNotesCard } from '@/components/dashboard/recent-notes-card';
 import { useDashboardStats } from '@/hooks/use-dashboard-stats';
+import { useAuth } from '@/hooks/use-auth';
 import { formatDuration } from '@/lib/utils';
 
-/**
- * Dashboard overview. Stats are derived live from the user's Firestore pomodoro
- * sessions and planner tasks via useDashboardStats (Milestone 2).
- */
 export default function DashboardPage() {
   const { stats } = useDashboardStats();
+  const { user } = useAuth();
+
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
+  const name = user?.displayName?.split(' ')[0] ?? 'Student';
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">Your study overview at a glance.</p>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm text-muted-foreground">{greeting},</p>
+          <h1 className="text-3xl font-bold">{name} 👋</h1>
+          <p className="text-sm text-muted-foreground mt-1">Consistency today, success tomorrow.</p>
+        </div>
+        <button className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium">
+          <Plus className="h-4 w-4" /> Quick Add
+        </button>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Stats */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="Today" value={formatDuration(stats.dailySeconds)} icon={Clock} hint="Study time today" delay={0} />
-        <StatCard label="This week" value={formatDuration(stats.weeklySeconds)} icon={CalendarRange} hint="+8% vs last week" delay={0.05} />
-        <StatCard label="This month" value={formatDuration(stats.monthlySeconds)} icon={CalendarDays} hint="Monthly total" delay={0.1} />
-        <StatCard label="Streak" value={`${stats.streakDays} days`} icon={Flame} hint="Keep it going!" delay={0.15} />
-        <StatCard label="Productivity" value={`${stats.productivityScore}/100`} icon={Gauge} hint="Focus quality" delay={0.2} />
-        <StatCard label="Pomodoros" value={`${stats.pomodoroCount}`} icon={Timer} hint="Sessions today" delay={0.25} />
-        <StatCard label="Goal progress" value={`${stats.goalProgress}%`} icon={ListChecks} hint="Weekly goal" delay={0.3} />
-        <StatCard label="Next exam" value="5 days" icon={GraduationCap} hint="Physics midterm" delay={0.35} />
+        <StatCard label="Streak" value={`${stats.streakDays} days`} icon={Flame} hint="Keep it going!" delay={0.05} />
+        <StatCard label="Focus Score" value={`${stats.productivityScore}`} icon={Gauge} hint="Excellent!" delay={0.1} />
+        <StatCard label="Pomodoros" value={`${stats.pomodoroCount}`} icon={Timer} hint="Sessions today" delay={0.15} />
       </div>
 
+      {/* Main Grid */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <TodayTasksCard delay={0.4} />
         <RecentNotesCard delay={0.45} />
