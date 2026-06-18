@@ -7,8 +7,6 @@ import {
   LayoutDashboard, CalendarCheck, Timer, ShieldCheck, NotebookPen,
   BookOpen, Sparkles, GraduationCap, BookHeart, Layers
 } from 'lucide-react';
-import { useGamification } from '@/hooks/use-gamification';
-import { useDashboardStats } from '@/hooks/use-dashboard-stats';
 
 const NAV = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, ready: true },
@@ -23,23 +21,14 @@ const NAV = [
   { href: '/dashboard/assistant', label: 'AI Assistant', icon: Sparkles, ready: true }
 ];
 
-const QUOTE = {
-  text: "Discipline today, freedom tomorrow.",
-  author: "Miyamoto Musashi"
-};
-
 export function Sidebar() {
   const pathname = usePathname();
-  const { stats } = useDashboardStats();
-  const { profile, level } = useGamification(stats.streakDays);
-
   return (
-    <aside className="glass hidden w-64 shrink-0 flex-col rounded-none p-4 md:flex">
+    <aside className="glass hidden w-64 shrink-0 flex-col gap-1 rounded-none p-4 md:flex">
       <Link href="/dashboard" className="mb-6 flex items-center gap-2 px-2 font-bold">
         <GraduationCap className="h-6 w-6 text-primary" /> StudySphere
       </Link>
-
-      <nav className="flex flex-col gap-1 flex-1">
+      <nav className="flex flex-col gap-1">
         {NAV.map(({ href, label, icon: Icon, ready }) => {
           const active = pathname === href;
           return (
@@ -59,28 +48,6 @@ export function Sidebar() {
           );
         })}
       </nav>
-
-      <div className="mt-4 rounded-lg bg-primary/10 p-3">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-2xl">⚡</span>
-          <div>
-            <p className="text-xs text-muted-foreground">Level {level.level}</p>
-            <p className="text-sm font-bold">{level.title}</p>
-          </div>
-        </div>
-        <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-          <div className="h-1.5 rounded-full bg-primary" style={{ width: `${level.progressPct}%` }} />
-        </div>
-        <p className="text-xs text-muted-foreground mt-1">{profile.totalXp} / {level.nextXp} XP</p>
-        {stats.streakDays > 0 && (
-          <p className="text-xs text-orange-400 mt-1">🔥 {stats.streakDays} Day Streak</p>
-        )}
-      </div>
-
-      <div className="mt-3 rounded-lg bg-muted/50 p-3">
-        <p className="text-xs italic text-muted-foreground">"{QUOTE.text}"</p>
-        <p className="text-xs text-primary mt-1">— {QUOTE.author}</p>
-      </div>
     </aside>
   );
 }
