@@ -3,28 +3,79 @@
 import { GlassCard } from '@/components/shared/glass-card';
 import { cn } from '@/lib/utils';
 import { Flame, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 interface StreakCalendarCardProps {
-  /** Set of day-keys (YYYY-MM-DD) on which the user studied. */
-  activeDays?: Set<string>;
-  streakDays?: number;
   delay?: number;
 }
 
 const WEEK_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+const STORAGE_KEY = 'streak-calendar-v1';
 
 function toKey(d: Date) {
   return d.toISOString().slice(0, 10);
 }
 
-/** GitHub-style activity grid for the last 4 weeks, ending today. */
-export function StreakCalendarCard({ activeDays, streakDays = 0, delay }: StreakCalendarCardProps) {
+function loadMarkedDays(): Set<string> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return new Set(JSON.parse(raw) as string[]);
+  } catch {
+    /* ignore */
+  }
+  return new Set();
+}
+
+function saveMarkedDays(days: Set<string>) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(days)));
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Computes the current consecutive-day streak ending today (or yesterday, if today isn't marked yet). */
+function computeStreak(days: Set<string>): number {
+  let streak = 0;
+  const cursor = new Date();
+  // Allow the streak to still count if today simply hasn't been marked yet.
+  if (!days.has(toKey(cursor))) {
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  while (days.has(toKey(cursor))) {
+    streak++;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return streak;
+}
+
+/** Click-to-toggle activity grid for the last 4 weeks, ending today. Persists to localStorage. */
+export function StreakCalendarCard({ delay }: StreakCalendarCardProps) {
   const [weekOffset, setWeekOffset] = useState(0);
+  const [markedDays, setMarkedDays] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    setMarkedDays(loadMarkedDays());
+  }, []);
+
+  const toggleDay = useCallback((key: string, isFuture: boolean) => {
+    if (isFuture) return;
+    setMarkedDays((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      saveMarkedDays(next);
+      return next;
+    });
+  }, []);
+
+  const streakDays = useMemo(() => computeStreak(markedDays), [markedDays]);
 
   const weeks = useMemo(() => {
     const today = new Date();
-    // Find the Monday of the current week, then shift by weekOffset weeks.
     const dow = (today.getDay() + 6) % 7; // 0 = Monday
     const thisMonday = new Date(today);
     thisMonday.setDate(today.getDate() - dow + weekOffset * 7);
@@ -39,21 +90,19 @@ export function StreakCalendarCard({ activeDays, streakDays = 0, delay }: Streak
         row.push({
           date: day,
           key,
-          active: activeDays?.has(key) ?? false,
+          active: markedDays.has(key),
           future: day > today,
         });
       }
       grid.push(row);
     }
     return grid;
-  }, [activeDays, weekOffset]);
+  }, [markedDays, weekOffset]);
 
   return (
     <GlassCard delay={delay} className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h3 className="font-semibold">Streak Calendar</h3>
-        </div>
+        <h3 className="font-semibold">Streak Calendar</h3>
         <div className="flex items-center gap-1">
           <button
             type="button"
@@ -87,16 +136,19 @@ export function StreakCalendarCard({ activeDays, streakDays = 0, delay }: Streak
           </span>
         ))}
         {weeks.flat().map((cell) => (
-          <div
+          <button
             key={cell.key}
+            type="button"
             title={cell.key}
+            onClick={() => toggleDay(cell.key, cell.future)}
+            disabled={cell.future}
             className={cn(
-              'aspect-square rounded-md',
+              'aspect-square rounded-md transition-colors',
               cell.future
-                ? 'bg-transparent'
+                ? 'cursor-default bg-transparent'
                 : cell.active
-                  ? 'bg-gradient-brand'
-                  : 'bg-secondary/60'
+                  ? 'bg-gradient-brand hover:opacity-80'
+                  : 'bg-secondary/60 hover:bg-secondary'
             )}
           />
         ))}
