@@ -13,21 +13,17 @@ import { AiAssistantWidget } from '@/components/dashboard/ai-assistant-widget';
 import { XpCard } from '@/components/dashboard/xp-card';
 import { useDashboardStats } from '@/hooks/use-dashboard-stats';
 import { useAuth } from '@/hooks/use-auth';
+import { useFocusShieldState } from '@/hooks/use-focus-shield-state';
 import { formatDuration } from '@/lib/utils';
 
 export default function DashboardPage() {
   const { stats } = useDashboardStats();
   const { user } = useAuth();
+  const { active: focusActive, endsAt: focusEndsAt, blockedCount: focusBlockedCount } = useFocusShieldState();
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
   const name = user?.displayName?.split(' ')[0] ?? 'Student';
-
-  // Focus Shield state is not yet lifted to a shared hook; default to inactive on the dashboard
-  // preview until that refactor happens. The full Focus Shield page remains the source of truth.
-  const focusActive = false;
-  const focusEndsAt: number | null = null;
-  const focusBlockedCount = 0;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -58,7 +54,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <StreakCalendarCard streakDays={stats.streakDays} delay={0.25} />
+        <StreakCalendarCard delay={0.25} />
         <FocusShieldWidget active={focusActive} endsAt={focusEndsAt} blockedCount={focusBlockedCount} delay={0.3} />
         <AiAssistantWidget delay={0.35} />
       </div>

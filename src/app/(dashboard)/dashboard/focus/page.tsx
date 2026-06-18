@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { GlassCard } from '@/components/shared/glass-card';
 import { BlockListEditor } from '@/components/focus/block-list-editor';
 import { useAuth } from '@/hooks/use-auth';
+import { useFocusShieldState } from '@/hooks/use-focus-shield-state';
 import { getFocusSettings, saveFocusSettings } from '@/lib/pomodoro/session-service';
 import { broadcastFocusStart, broadcastFocusStop, buildBlockList } from '@/lib/focus/extension-contract';
 import { DEFAULT_FOCUS_SETTINGS, type FocusSettings } from '@/lib/firestore/pomodoro-schema';
@@ -33,8 +34,7 @@ function Toggle({ label, checked, onChange }: { label: string; checked: boolean;
 export default function FocusShieldPage() {
   const { user } = useAuth();
   const [settings, setSettings] = useState<Settings>(DEFAULT_FOCUS_SETTINGS);
-  const [active, setActive] = useState(false);
-  const [endsAt, setEndsAt] = useState<number | null>(null);
+  const { active, endsAt, startSession, endSession } = useFocusShieldState();
 
   useEffect(() => {
     if (!user) return;
@@ -53,15 +53,13 @@ export default function FocusShieldPage() {
 
   function activate() {
     const end = Date.now() + settings.focusDurationMinutes * 60 * 1000;
-    setActive(true);
-    setEndsAt(end);
+    startSession(settings.focusDurationMinutes, buildBlockList(settings).length);
     broadcastFocusStart(buildBlockList(settings), end);
     toast.success('Focus Shield activated');
   }
 
   function emergencyExit() {
-    setActive(false);
-    setEndsAt(null);
+    endSession();
     broadcastFocusStop();
     toast.message('Focus Shield deactivated');
   }
