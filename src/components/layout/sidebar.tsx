@@ -8,7 +8,6 @@ import {
   BookOpen, Sparkles, GraduationCap, BookHeart, Layers
 } from 'lucide-react';
 
-/** Primary navigation. Later milestones enable the disabled links. */
 const NAV = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, ready: true },
   { href: '/dashboard/planner', label: 'Planner', icon: CalendarCheck, ready: true },
@@ -22,14 +21,20 @@ const NAV = [
   { href: '/dashboard/assistant', label: 'AI Assistant', icon: Sparkles, ready: true }
 ];
 
+const QUOTE = {
+  text: "Discipline today, freedom tomorrow.",
+  author: "Miyamoto Musashi"
+};
+
 export function Sidebar() {
   const pathname = usePathname();
   return (
-    <aside className="glass hidden w-64 shrink-0 flex-col gap-1 rounded-none p-4 md:flex">
+    <aside className="glass hidden w-64 shrink-0 flex-col rounded-none p-4 md:flex">
       <Link href="/dashboard" className="mb-6 flex items-center gap-2 px-2 font-bold">
         <GraduationCap className="h-6 w-6 text-primary" /> StudySphere
       </Link>
-      <nav className="flex flex-col gap-1">
+
+      <nav className="flex flex-col gap-1 flex-1">
         {NAV.map(({ href, label, icon: Icon, ready }) => {
           const active = pathname === href;
           return (
@@ -49,6 +54,28 @@ export function Sidebar() {
           );
         })}
       </nav>
+
+      {/* Level & XP */}
+      <div className="mt-4 rounded-lg bg-primary/10 p-3">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-2xl">⚡</span>
+          <div>
+            <p className="text-xs text-muted-foreground">Level 7</p>
+            <p className="text-sm font-bold">Samurai</p>
+          </div>
+        </div>
+        <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+          <div className="h-1.5 rounded-full bg-primary" style={{ width: '69%' }} />
+        </div>
+        <p className="text-xs text-muted-foreground mt-1">1,250 / 1,800 XP</p>
+        <p className="text-xs text-orange-400 mt-1">🔥 14 Day Streak</p>
+      </div>
+
+      {/* Quote */}
+      <div className="mt-3 rounded-lg bg-muted/50 p-3">
+        <p className="text-xs italic text-muted-foreground">"{QUOTE.text}"</p>
+        <p className="text-xs text-primary mt-1">— {QUOTE.author}</p>
+      </div>
     </aside>
   );
 }
