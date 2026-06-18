@@ -44,7 +44,6 @@ function completionRatio(goals: Goal[] | undefined): number {
   return done / goals.length;
 }
 
-/** True if every goal on this day is marked done (and there's at least one goal). */
 function isDayComplete(goals: Goal[] | undefined): boolean {
   return !!goals && goals.length > 0 && goals.every((g) => g.done);
 }
@@ -85,6 +84,7 @@ export function StreakCalendarCard({ delay }: { delay?: number }) {
   }, []);
 
   const streakDays = useMemo(() => computeStreak(data), [data]);
+  const todayKey = useMemo(() => toKey(new Date()), []);
 
   const weeks = useMemo(() => {
     const today = new Date();
@@ -92,9 +92,9 @@ export function StreakCalendarCard({ delay }: { delay?: number }) {
     const thisMonday = new Date(today);
     thisMonday.setDate(today.getDate() - dow + weekOffset * 7);
 
-    const grid: { date: Date; key: string; dayNum: number; ratio: number; future: boolean }[][] = [];
+    const grid: { date: Date; key: string; dayNum: number; ratio: number; future: boolean; isToday: boolean }[][] = [];
     for (let w = 3; w >= 0; w--) {
-      const row: { date: Date; key: string; dayNum: number; ratio: number; future: boolean }[] = [];
+      const row: { date: Date; key: string; dayNum: number; ratio: number; future: boolean; isToday: boolean }[] = [];
       for (let d = 0; d < 7; d++) {
         const day = new Date(thisMonday);
         day.setDate(thisMonday.getDate() - w * 7 + d);
@@ -105,12 +105,18 @@ export function StreakCalendarCard({ delay }: { delay?: number }) {
           dayNum: day.getDate(),
           ratio: completionRatio(data[key]),
           future: day > today,
+          isToday: key === todayKey,
         });
       }
       grid.push(row);
     }
     return grid;
-  }, [data, weekOffset]);
+  }, [data, weekOffset, todayKey]);
+
+  const monthLabel = useMemo(() => {
+    const lastDay = weeks[weeks.length - 1]?.[6]?.date ?? new Date();
+    return lastDay.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  }, [weeks]);
 
   const openGoals = openDay ? data[openDay] ?? [] : [];
 
@@ -141,7 +147,10 @@ export function StreakCalendarCard({ delay }: { delay?: number }) {
     <>
       <GlassCard delay={delay} className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold">Goal Tracker</h3>
+          <div>
+            <h3 className="font-semibold">Goal Tracker</h3>
+            <p className="text-xs text-muted-foreground">{monthLabel}</p>
+          </div>
           <div className="flex items-center gap-1">
             <button
               type="button"
@@ -184,7 +193,8 @@ export function StreakCalendarCard({ delay }: { delay?: number }) {
               className={cn(
                 'relative aspect-square rounded-md text-[10px] font-medium transition-colors',
                 cell.future ? 'cursor-default bg-transparent text-transparent' : heatClass(cell.ratio),
-                cell.ratio >= 0.5 && !cell.future ? 'text-white' : 'text-muted-foreground'
+                cell.ratio >= 0.5 && !cell.future ? 'text-white' : 'text-muted-foreground',
+                cell.isToday && 'ring-2 ring-primary ring-offset-2 ring-offset-background'
               )}
             >
               {!cell.future && cell.dayNum}
@@ -202,7 +212,6 @@ export function StreakCalendarCard({ delay }: { delay?: number }) {
         </div>
       </GlassCard>
 
-      {/* Day detail modal */}
       {openDay && (
         <div
           className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4"
