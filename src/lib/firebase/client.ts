@@ -1,12 +1,8 @@
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, browserLocalPersistence, setPersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
-/**
- * Firebase client SDK initialization (browser).
- * Values come from NEXT_PUBLIC_* env vars (see .env.example).
- */
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -19,6 +15,10 @@ const firebaseConfig = {
 
 export const firebaseApp: FirebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
 export const auth = getAuth(firebaseApp);
+
+// Session persist karo - refresh pe logout nahi hoga
+setPersistence(auth, browserLocalPersistence);
+
 export const db = getFirestore(firebaseApp);
 export const storage = getStorage(firebaseApp);
 export const googleProvider = new GoogleAuthProvider();
