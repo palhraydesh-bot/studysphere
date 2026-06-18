@@ -1,85 +1,401 @@
-'use client';
+"use client";
 
-import { Clock, Flame, Gauge, Timer, Plus, Sparkles } from 'lucide-react';
-import { StatCard } from '@/components/shared/stat-card';
-import { TodayTasksCard } from '@/components/dashboard/today-tasks-card';
-import { RecentNotesCard } from '@/components/dashboard/recent-notes-card';
-import { StudyTimeChart } from '@/components/dashboard/study-time-chart';
-import { SubjectsProgressCard } from '@/components/dashboard/subjects-progress-card';
-import { AchievementsCard } from '@/components/dashboard/achievements-card';
-import { StreakCalendarCard } from '@/components/dashboard/streak-calendar-card';
-import { useDashboardStats } from '@/hooks/use-dashboard-stats';
-import { useAuth } from '@/hooks/use-auth';
-import { formatDuration } from '@/lib/utils';
-import Link from 'next/link';
+import { useState } from "react";
+import Link from "next/link";
 
+// ── tiny SVG sparkline ──────────────────────────────────────────────
+function Sparkline({ color = "#a78bfa", up = true }: { color?: string; up?: boolean }) {
+  const pts = up
+    ? "0,28 10,22 20,24 30,14 40,18 50,8 60,12"
+    : "0,12 10,18 20,14 30,24 40,20 50,28 60,22";
+  return (
+    <svg width="60" height="32" viewBox="0 0 60 32" fill="none">
+      <polyline points={pts} stroke={color} strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+// ── area chart for weekly study ──────────────────────────────────────
+function WeeklyChart() {
+  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const vals = [1.5, 2.2, 1.8, 3.5, 2.8, 4.2, 3.0];
+  const max = 5;
+  const w = 420, h = 120, pad = 24;
+  const xs = vals.map((_, i) => pad + (i / (vals.length - 1)) * (w - pad * 2));
+  const ys = vals.map((v) => h - pad - (v / max) * (h - pad * 2));
+  const pts = xs.map((x, i) => `${x},${ys[i]}`).join(" ");
+  const area = `M${xs[0]},${ys[0]} ` + xs.map((x, i) => (i === 0 ? "" : `L${x},${ys[i]}`)).join(" ") + ` L${xs[xs.length - 1]},${h - pad} L${xs[0]},${h - pad} Z`;
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} className="w-full" style={{ height: 120 }}>
+      <defs>
+        <linearGradient id="cg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.35" />
+          <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.02" />
+        </linearGradient>
+      </defs>
+      {[0, 2, 4].map((v) => {
+        const y = h - pad - (v / max) * (h - pad * 2);
+        return (
+          <g key={v}>
+            <line x1={pad} y1={y} x2={w - pad} y2={y} stroke="#ffffff10" strokeWidth="1" />
+            <text x={pad - 4} y={y + 4} fill="#666" fontSize="9" textAnchor="end">{v}h</text>
+          </g>
+        );
+      })}
+      <path d={area} fill="url(#cg)" />
+      <polyline points={pts} fill="none" stroke="#8b5cf6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      {xs.map((x, i) => (
+        <circle key={i} cx={x} cy={ys[i]} r="3.5" fill="#8b5cf6" stroke="#1a1a2e" strokeWidth="1.5" />
+      ))}
+      {days.map((d, i) => (
+        <text key={d} x={xs[i]} y={h - 4} fill="#888" fontSize="9" textAnchor="middle">{d}</text>
+      ))}
+    </svg>
+  );
+}
+
+// ── subject bar ──────────────────────────────────────────────────────
+const SUBJECTS = [
+  { name: "Physics", pct: 78, color: "#3b82f6" },
+  { name: "Mathematics", pct: 65, color: "#a855f7" },
+  { name: "Chemistry", pct: 54, color: "#22c55e" },
+  { name: "Biology", pct: 40, color: "#f97316" },
+  { name: "English", pct: 30, color: "#eab308" },
+];
+
+function SubjectBar({ name, pct, color }: { name: string; pct: number; color: string }) {
+  return (
+    <div className="mb-3">
+      <div className="flex justify-between text-sm mb-1">
+        <span className="text-gray-300">{name}</span>
+        <span className="text-gray-400">{pct}%</span>
+      </div>
+      <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+        <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: color }} />
+      </div>
+    </div>
+  );
+}
+
+// ── quick action card ─────────────────────────────────────────────────
+function QAction({ icon, label, sub, color }: { icon: string; label: string; sub: string; color: string }) {
+  return (
+    <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 cursor-pointer transition-all group">
+      <div className="w-9 h-9 rounded-lg flex items-center justify-center text-lg flex-shrink-0" style={{ background: color + "22" }}>
+        <span>{icon}</span>
+      </div>
+      <div>
+        <p className="text-sm font-medium text-white group-hover:text-violet-300 transition-colors">{label}</p>
+        <p className="text-xs text-gray-500">{sub}</p>
+      </div>
+    </div>
+  );
+}
+
+// ── study tool card ───────────────────────────────────────────────────
+function ToolCard({ icon, title, desc, link, color }: { icon: string; title: string; desc: string; link: string; color: string }) {
+  return (
+    <div className="bg-white/5 border border-white/10 rounded-2xl p-4 hover:border-violet-500/50 hover:bg-white/8 transition-all group">
+      <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl mb-3" style={{ background: color + "22" }}>
+        {icon}
+      </div>
+      <p className="font-semibold text-white text-sm mb-1">{title}</p>
+      <p className="text-xs text-gray-500 mb-3 leading-relaxed">{desc}</p>
+      <Link href={link} className="text-xs font-medium text-violet-400 group-hover:text-violet-300 transition-colors">
+        {link === "#" ? "Try Now →" : "Open →"}
+      </Link>
+    </div>
+  );
+}
+
+// ── stat card ─────────────────────────────────────────────────────────
+function StatCard({ icon, label, value, sub, subColor = "text-gray-500" }: {
+  icon: string; label: string; value: string; sub: string; subColor?: string;
+}) {
+  return (
+    <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex-1 min-w-0">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-lg">{icon}</span>
+        <span className="text-xs text-gray-400 truncate">{label}</span>
+      </div>
+      <p className="text-xl font-bold text-white leading-tight">{value}</p>
+      <p className={`text-xs mt-1 ${subColor}`}>{sub}</p>
+    </div>
+  );
+}
+
+// ── main component ────────────────────────────────────────────────────
 export default function DashboardPage() {
-  const { stats } = useDashboardStats();
-  const { user } = useAuth();
-
+  const [aiQuery, setAiQuery] = useState("");
   const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
-  const name = user?.displayName?.split(' ')[0] ?? 'Student';
+  const greeting = hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : "Good Evening";
+
+  const todayTasks = [
+    { title: "Physics: Laws of Motion", time: "45m", done: true },
+    { title: "Maths: Trigonometry", time: "60m", done: true },
+    { title: "Chemistry: Chemical Bonding", time: "45m", done: false },
+    { title: "Biology: Plant Kingdom", time: "30m", done: false },
+  ];
+
+  const revisionAlerts = [
+    { topic: "Chemical Bonding", priority: "High", color: "#ef4444", when: "Due today" },
+    { topic: "Vectors", priority: "Medium", color: "#f97316", when: "Due tomorrow" },
+    { topic: "Thermodynamics", priority: "Low", color: "#22c55e", when: "Due in 2 days" },
+  ];
+
+  const achievements = [
+    { icon: "🌅", title: "Early Bird", desc: "Study before 7 AM" },
+    { icon: "🎯", title: "Focus Master", desc: "50 Deep Focus Sessions" },
+    { icon: "⚔️", title: "Week Warrior", desc: "7 Day Streak" },
+  ];
+
+  const aiSuggestions = ["Explain photosynthesis", "Solve this integral", "Newton's 3rd law example", "Basic concepts of EMI"];
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-[#0d0d1a] text-white">
+      <div className="p-4 md:p-6 max-w-[1400px] mx-auto space-y-5">
+
+        {/* ── TOP ROW ── */}
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <p className="text-gray-400 text-sm">{greeting},</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-white">
+              Hraydesh! <span className="animate-pulse">👋</span>
+            </h1>
+            <p className="text-gray-500 text-sm mt-0.5">Consistency today, success tomorrow.</p>
+          </div>
+          <button className="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition-all shadow-lg shadow-violet-900/40">
+            <span className="text-lg">+</span> Quick Add
+          </button>
+        </div>
+
+        {/* ── STAT CARDS ── */}
+        <div className="flex gap-3 overflow-x-auto pb-1">
+          <StatCard icon="⏱️" label="Study Time Today" value="2h 45m" sub="↑ 28% vs yesterday" subColor="text-green-400" />
+          <StatCard icon="🔥" label="Streak" value="12 Days" sub="Keep it going!" subColor="text-orange-400" />
+          <StatCard icon="⚡" label="Focus Score" value="82/100" sub="Excellent! 🔥" subColor="text-violet-400" />
+          <StatCard icon="✅" label="Tasks Done" value="8/12" sub="Keep pushing!" subColor="text-blue-400" />
+          <StatCard icon="⭐" label="XP Today" value="220 XP" sub="Total XP: 3250" subColor="text-yellow-400" />
+        </div>
+
+        {/* ── MAIN GRID: Chart + Subjects + AI Tutor ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+          {/* Study Overview */}
+          <div className="lg:col-span-1 bg-white/5 border border-white/10 rounded-2xl p-5">
+            <div className="flex items-center justify-between mb-1">
+              <h2 className="font-semibold text-white">Study Overview</h2>
+              <span className="text-xs bg-white/10 text-gray-300 px-2 py-1 rounded-lg">This Week</span>
+            </div>
+            <p className="text-2xl font-bold text-white mt-1">18h 30m</p>
+            <p className="text-xs text-green-400 mb-3">↑ 32% vs last week</p>
+            <WeeklyChart />
+          </div>
+
+          {/* Subjects Progress */}
+          <div className="lg:col-span-1 bg-white/5 border border-white/10 rounded-2xl p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-semibold text-white">Subjects Progress</h2>
+              <span className="text-violet-400 font-semibold text-sm">68%</span>
+            </div>
+            <div className="mb-4">
+              <div className="flex justify-between text-xs text-gray-400 mb-1">
+                <span>Overall Progress</span>
+                <span>68%</span>
+              </div>
+              <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                <div className="h-full rounded-full bg-gradient-to-r from-violet-500 to-blue-500" style={{ width: "68%" }} />
+              </div>
+            </div>
+            {SUBJECTS.map((s) => <SubjectBar key={s.name} {...s} />)}
+          </div>
+
+          {/* AI Tutor */}
+          <div className="lg:col-span-1 bg-white/5 border border-white/10 rounded-2xl p-5 flex flex-col">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-violet-600 flex items-center justify-center text-xl">🤖</div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="font-semibold text-white">AI Tutor</h2>
+                  <span className="text-xs bg-violet-600 text-white px-2 py-0.5 rounded-full">New</span>
+                </div>
+                <p className="text-xs text-gray-400">Ask anything. Get instant explanations.</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 bg-white/8 border border-white/10 rounded-xl px-3 py-2 mb-3">
+              <input
+                value={aiQuery}
+                onChange={(e) => setAiQuery(e.target.value)}
+                placeholder="Ask a question..."
+                className="flex-1 bg-transparent text-sm text-white placeholder-gray-500 outline-none"
+              />
+              <button className="w-7 h-7 bg-violet-600 rounded-lg flex items-center justify-center text-xs hover:bg-violet-700 transition-colors">➤</button>
+            </div>
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              {aiSuggestions.map((s) => (
+                <button key={s} onClick={() => setAiQuery(s)}
+                  className="text-xs bg-white/8 hover:bg-white/15 text-gray-300 px-2 py-1.5 rounded-lg text-left transition-colors truncate border border-white/10">
+                  {s}
+                </button>
+              ))}
+            </div>
+
+            {/* Quick Actions */}
+            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Quick Actions</h3>
+            <div className="grid grid-cols-1 gap-2">
+              <div className="grid grid-cols-3 gap-2">
+                <QAction icon="🎯" label="Focus" sub="Deep work" color="#8b5cf6" />
+                <QAction icon="📝" label="Mock Test" sub="Test skills" color="#3b82f6" />
+                <QAction icon="🔄" label="Revision" sub="Weak topics" color="#f97316" />
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <QAction icon="📒" label="Notes" sub="View notes" color="#22c55e" />
+                <QAction icon="🏦" label="Q Bank" sub="Practice" color="#ef4444" />
+                <QAction icon="🃏" label="Flashcards" sub="Smart rev." color="#06b6d4" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── STUDY TOOLS ── */}
         <div>
-          <p className="text-sm text-muted-foreground">{greeting},</p>
-          <h1 className="text-3xl font-bold">{name} 👋</h1>
-          <p className="text-sm text-muted-foreground mt-1">Consistency today, success tomorrow.</p>
+          <h2 className="font-bold text-white text-lg mb-3">Powerful Study Tools</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            <ToolCard icon="📅" title="Smart Planner" desc="AI powered study plan that adapts to you." link="/dashboard/planner" color="#8b5cf6" />
+            <ToolCard icon="🔄" title="Revision System" desc="Spaced repetition & smart reminders." link="/dashboard/subjects" color="#3b82f6" />
+            <ToolCard icon="📝" title="Mock Tests" desc="Chapter-wise & full length tests." link="#" color="#22c55e" />
+            <ToolCard icon="📚" title="Question Bank" desc="50000+ questions with solutions." link="#" color="#f97316" />
+            <ToolCard icon="🃏" title="Flashcards" desc="Quick revision with smart flashcards." link="/dashboard/flashcards" color="#06b6d4" />
+            <ToolCard icon="🤖" title="AI Summarizer" desc="Summarize notes & get key points." link="/dashboard/assistant" color="#a855f7" />
+          </div>
         </div>
-        <button className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium">
-          <Plus className="h-4 w-4" /> Quick Add
-        </button>
-      </div>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
-        <StatCard label="Today" value={formatDuration(stats.dailySeconds)} icon={Clock} hint="Study time today" delay={0} />
-        <StatCard label="Streak" value={`${stats.streakDays} days`} icon={Flame} hint="Keep it going!" delay={0.05} />
-        <StatCard label="Focus Score" value={`${stats.productivityScore}`} icon={Gauge} hint="Excellent!" delay={0.1} />
-        <StatCard label="Pomodoros" value={`${stats.pomodoroCount}`} icon={Timer} hint="Sessions today" delay={0.15} />
-        <StatCard label="XP Today" value={`${stats.pomodoroCount * 10} XP`} icon={Sparkles} hint={`Total XP: ${stats.pomodoroCount * 50}`} delay={0.2} />
-      </div>
+        {/* ── BOTTOM GRID ── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <StudyTimeChart weeklySeconds={stats.weeklySeconds} />
-        <SubjectsProgressCard />
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <StreakCalendarCard delay={0.3} />
-
-        <Link href="/dashboard/focus" className="rounded-xl border bg-card p-4 hover:bg-accent block">
-          <h2 className="font-semibold mb-2">🛡️ Focus Shield</h2>
-          <p className="text-sm text-muted-foreground mb-3">Block distractions and stay focused</p>
-          <div className="bg-primary text-white text-center rounded-lg py-2 text-sm font-medium">
-            Activate Focus Shield
+          {/* Today's Plan */}
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-semibold text-white">Today's Plan</h2>
+              <Link href="/dashboard/planner" className="text-xs text-violet-400 hover:text-violet-300">View Planner</Link>
+            </div>
+            <div className="space-y-2.5">
+              {todayTasks.map((t, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${t.done ? "bg-green-500 border-green-500" : "border-gray-600"}`}>
+                    {t.done && <span className="text-white text-xs">✓</span>}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm truncate ${t.done ? "text-gray-500 line-through" : "text-gray-200"}`}>{t.title}</p>
+                  </div>
+                  <span className="text-xs text-gray-500 flex-shrink-0">{t.time}</span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4">
+              <div className="flex justify-between text-xs text-gray-400 mb-1">
+                <span>8/12 tasks completed</span>
+                <span>67%</span>
+              </div>
+              <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                <div className="h-full rounded-full bg-gradient-to-r from-violet-500 to-blue-500" style={{ width: "67%" }} />
+              </div>
+            </div>
           </div>
-        </Link>
 
-        <div className="rounded-xl border bg-card p-4 space-y-3">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            <h2 className="font-semibold">AI Assistant</h2>
+          {/* Performance Analytics */}
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-semibold text-white">Performance Analytics</h2>
+              <span className="text-xs bg-white/10 text-gray-300 px-2 py-1 rounded-lg">This Month</span>
+            </div>
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              {[
+                { label: "Accuracy", value: "78%", change: "+8%", color: "#8b5cf6", up: true },
+                { label: "Speed", value: "42 Q/h", change: "+12%", color: "#22c55e", up: true },
+                { label: "Consistency", value: "85%", change: "+15%", color: "#3b82f6", up: true },
+              ].map((m) => (
+                <div key={m.label} className="text-center">
+                  <p className="text-xs text-gray-400 mb-1">{m.label}</p>
+                  <p className="text-base font-bold text-white">{m.value}</p>
+                  <div className="flex justify-center mt-1"><Sparkline color={m.color} up={m.up} /></div>
+                  <p className="text-xs text-green-400">{m.change}</p>
+                </div>
+              ))}
+            </div>
+            <Link href="/dashboard/analytics" className="block text-center text-xs text-violet-400 hover:text-violet-300 border border-white/10 rounded-lg py-2 transition-colors">
+              View Detailed Analytics →
+            </Link>
           </div>
-          <p className="text-sm text-muted-foreground">How can I help you today?</p>
-          <div className="grid grid-cols-2 gap-2">
-            <Link href="/dashboard/assistant" className="text-xs bg-muted rounded-lg p-2 hover:bg-accent text-center">📖 Explain a topic</Link>
-            <Link href="/dashboard/assistant" className="text-xs bg-muted rounded-lg p-2 hover:bg-accent text-center">📝 Summarize notes</Link>
-            <Link href="/dashboard/assistant" className="text-xs bg-muted rounded-lg p-2 hover:bg-accent text-center">❓ Quiz me</Link>
-            <Link href="/dashboard/assistant" className="text-xs bg-muted rounded-lg p-2 hover:bg-accent text-center">📅 Generate plan</Link>
+
+          {/* Revision Alert */}
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-semibold text-white">Revision Alert</h2>
+              <button className="text-xs text-violet-400 hover:text-violet-300">View All</button>
+            </div>
+            <div className="space-y-3">
+              {revisionAlerts.map((r) => (
+                <div key={r.topic} className="flex items-center gap-3 p-2.5 rounded-xl bg-white/5 hover:bg-white/10 transition-colors cursor-pointer">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm" style={{ background: r.color + "22" }}>
+                    📖
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-white truncate">{r.topic}</p>
+                    <p className="text-xs text-gray-500">{r.when}</p>
+                  </div>
+                  <span className="text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0" style={{ background: r.color + "22", color: r.color }}>
+                    {r.priority}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
-          <Link href="/dashboard/assistant" className="block w-full text-center text-xs bg-primary text-white rounded-lg p-2">
-            Open AI Assistant →
-          </Link>
+
+          {/* Achievements */}
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-semibold text-white">Achievements</h2>
+              <Link href="/dashboard/achievements" className="text-xs text-violet-400 hover:text-violet-300">View All</Link>
+            </div>
+            <div className="space-y-3">
+              {achievements.map((a) => (
+                <div key={a.title} className="flex items-center gap-3 p-2.5 rounded-xl bg-white/5 hover:bg-white/10 transition-colors cursor-pointer">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-600 to-blue-600 flex items-center justify-center text-lg flex-shrink-0">
+                    {a.icon}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-white">{a.title}</p>
+                    <p className="text-xs text-gray-500">{a.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <TodayTasksCard delay={0.4} />
-        <RecentNotesCard delay={0.45} />
-        <AchievementsCard />
+        {/* ── BOTTOM STATS BAR ── */}
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            {[
+              { icon: "🎯", label: "Daily Goal", value: "2h 45m / 4h" },
+              { icon: "📖", label: "Syllabus Progress", value: "53%" },
+              { icon: "📝", label: "Tests Taken", value: "12" },
+              { icon: "✅", label: "Accuracy", value: "78%" },
+              { icon: "🏆", label: "Rank", value: "#142", sub: "In leaderboard" },
+            ].map((s) => (
+              <div key={s.label} className="flex items-center gap-3 flex-1 min-w-[120px]">
+                <span className="text-2xl">{s.icon}</span>
+                <div>
+                  <p className="text-xs text-gray-400">{s.label}</p>
+                  <p className="font-bold text-white">{s.value}</p>
+                  {s.sub && <p className="text-xs text-gray-500">{s.sub}</p>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
       </div>
     </div>
   );
