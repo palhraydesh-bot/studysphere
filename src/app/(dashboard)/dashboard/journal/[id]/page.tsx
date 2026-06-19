@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { GlassCard } from '@/components/shared/glass-card';
 import { LockDialog } from '@/components/journal/lock-dialog';
-import { DiaryEditor } from '@/components/journal/diary-editor';
+import { DiaryEditor } from '../diary-editor';
 import { useAuth } from '@/hooks/use-auth';
 import { deleteEntry, getEntry, updateEntry } from '@/lib/journal/journal-service';
 import { decryptText, encryptText } from '@/lib/journal/journal-crypto';
