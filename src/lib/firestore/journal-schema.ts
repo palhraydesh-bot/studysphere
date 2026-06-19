@@ -16,10 +16,10 @@ export type Mood = 'great' | 'good' | 'okay' | 'low' | 'bad';
 
 export const MOODS: { id: Mood; label: string; emoji: string }[] = [
   { id: 'great', label: 'Great', emoji: '😄' },
-  { id: 'good', label: 'Good', emoji: '🙂' },
-  { id: 'okay', label: 'Okay', emoji: '😐' },
-  { id: 'low', label: 'Low', emoji: '😔' },
-  { id: 'bad', label: 'Bad', emoji: '😞' }
+  { id: 'good',  label: 'Good',  emoji: '🙂' },
+  { id: 'okay',  label: 'Okay',  emoji: '😐' },
+  { id: 'low',   label: 'Low',   emoji: '😔' },
+  { id: 'bad',   label: 'Bad',   emoji: '😞' },
 ];
 
 export interface JournalEntry {

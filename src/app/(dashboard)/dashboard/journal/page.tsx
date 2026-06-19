@@ -1,7 +1,8 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Search, BarChart2, BookOpen, Flame } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,17 +13,10 @@ import { JournalStats } from '@/components/journal/journal-stats';
 import { useAuth } from '@/hooks/use-auth';
 import { useJournalSync } from '@/hooks/use-journal';
 import { useJournalStore, filterEntries } from '@/store/journal-store';
-import { createEntry } from '@/lib/journal/journal-service';
+import { createEntry, updateEntry } from '@/lib/journal/journal-service';
 import { summarizeJournal } from '@/lib/journal/stats';
+import type { Mood } from '@/lib/firestore/journal-schema';
 import Link from 'next/link';
-
-const MOODS = [
-  { label: 'Amazing', emoji: '😁', color: 'text-green-400' },
-  { label: 'Good', emoji: '😊', color: 'text-blue-400' },
-  { label: 'Neutral', emoji: '😐', color: 'text-yellow-400' },
-  { label: 'Tough', emoji: '😟', color: 'text-orange-400' },
-  { label: 'Awful', emoji: '😢', color: 'text-red-400' },
-];
 
 const QUICK_ACTIONS = [
   { label: 'New Entry', icon: '✏️', href: '#', action: true },
@@ -39,16 +33,46 @@ export default function JournalPage() {
   const visible = filterEntries(entries, search);
   const stats = summarizeJournal(entries);
 
+  const [todayMood, setTodayMood] = useState<Mood | null>(null);
+
+  // Today ki entry se mood load karo
+  useEffect(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    const todayEntry = entries.find((e) => e.date === today);
+    if (todayEntry?.mood) setTodayMood(todayEntry.mood);
+  }, [entries]);
+
   async function newEntry() {
     if (!user) return;
     try {
       const today = new Date().toISOString().slice(0, 10);
       const id = await createEntry(user.uid, {
-        date: today, title: '', content: '', mood: null, gratitude: [], reflection: '', locked: false
+        date: today, title: '', content: '', mood: null,
+        gratitude: [], reflection: '', locked: false,
       });
       router.push(`/dashboard/journal/${id}`);
     } catch {
       toast.error('Could not create entry');
+    }
+  }
+
+  async function handleMoodSelect(mood: Mood) {
+    setTodayMood(mood);
+    if (!user) return;
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const todayEntry = entries.find((e) => e.date === today);
+      if (todayEntry) {
+        await updateEntry(user.uid, todayEntry.id, { mood });
+      } else {
+        await createEntry(user.uid, {
+          date: today, title: '', content: '', mood,
+          gratitude: [], reflection: '', locked: false,
+        });
+      }
+      toast.success('Mood saved!');
+    } catch {
+      toast.error('Could not save mood');
     }
   }
 
@@ -60,59 +84,39 @@ export default function JournalPage() {
           <h1 className="text-2xl font-bold tracking-tight">Journal</h1>
           <p className="text-sm text-muted-foreground">Reflect daily, grow consistently.</p>
         </div>
-        <Button variant="gradient" onClick={newEntry}><Plus className="h-4 w-4 mr-1" /> New Entry</Button>
+        <Button variant="gradient" onClick={newEntry}>
+          <Plus className="h-4 w-4 mr-1" /> New Entry
+        </Button>
       </div>
 
-      {/* Top Cards */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        {/* Today's Mood */}
-        <GlassCard>
-          <h2 className="font-semibold mb-3">Today's Mood</h2>
-          <div className="flex gap-2 flex-wrap">
-            {MOODS.map((m) => (
-              <button key={m.label} className="flex flex-col items-center gap-1 rounded-lg p-2 hover:bg-muted transition-colors">
-                <span className="text-2xl">{m.emoji}</span>
-                <span className={`text-xs ${m.color}`}>{m.label}</span>
+      {/* Stats — Today's Mood + Streak + Mood Mix */}
+      <JournalStats
+        stats={stats}
+        todayMood={todayMood}
+        onMoodSelect={handleMoodSelect}
+      />
+
+      {/* Quick Actions */}
+      <GlassCard>
+        <h2 className="font-semibold mb-3">Quick Actions</h2>
+        <div className="grid grid-cols-4 gap-2">
+          {QUICK_ACTIONS.map((a) =>
+            a.action ? (
+              <button key={a.label} onClick={newEntry}
+                className="flex flex-col items-center gap-1 rounded-lg bg-primary/20 p-2 hover:bg-primary/30">
+                <span className="text-xl">{a.icon}</span>
+                <span className="text-xs text-center">{a.label}</span>
               </button>
-            ))}
-          </div>
-        </GlassCard>
-
-        {/* Streak */}
-        <GlassCard>
-          <h2 className="font-semibold mb-3">Current Streak</h2>
-          <div className="flex items-center gap-3">
-            <span className="text-4xl">🔥</span>
-            <div>
-              <p className="text-3xl font-bold">{stats.streak ?? 0} days</p>
-              <p className="text-xs text-muted-foreground">Keep it up!</p>
-            </div>
-          </div>
-        </GlassCard>
-
-        {/* Quick Actions */}
-        <GlassCard>
-          <h2 className="font-semibold mb-3">Quick Actions</h2>
-          <div className="grid grid-cols-4 gap-2">
-            {QUICK_ACTIONS.map((a) => (
-              a.action ? (
-                <button key={a.label} onClick={newEntry} className="flex flex-col items-center gap-1 rounded-lg bg-primary/20 p-2 hover:bg-primary/30">
-                  <span className="text-xl">{a.icon}</span>
-                  <span className="text-xs text-center">{a.label}</span>
-                </button>
-              ) : (
-                <Link key={a.label} href={a.href} className="flex flex-col items-center gap-1 rounded-lg bg-muted p-2 hover:bg-accent">
-                  <span className="text-xl">{a.icon}</span>
-                  <span className="text-xs text-center">{a.label}</span>
-                </Link>
-              )
-            ))}
-          </div>
-        </GlassCard>
-      </div>
-
-      {/* Stats */}
-      <JournalStats stats={stats} />
+            ) : (
+              <Link key={a.label} href={a.href}
+                className="flex flex-col items-center gap-1 rounded-lg bg-muted p-2 hover:bg-accent">
+                <span className="text-xl">{a.icon}</span>
+                <span className="text-xs text-center">{a.label}</span>
+              </Link>
+            )
+          )}
+        </div>
+      </GlassCard>
 
       {/* Main Grid */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -121,12 +125,15 @@ export default function JournalPage() {
             <h2 className="font-semibold">Recent Entries</h2>
             <div className="relative max-w-xs">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search entries..." className="pl-9" />
+              <Input value={search} onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search entries..." className="pl-9" />
             </div>
           </div>
           {loading && <p className="text-sm text-muted-foreground">Loading entries...</p>}
           {!loading && visible.length === 0 && (
-            <p className="text-sm text-muted-foreground">{search ? 'No matching entries.' : 'No entries yet. Start journaling!'}</p>
+            <p className="text-sm text-muted-foreground">
+              {search ? 'No matching entries.' : 'No entries yet. Start journaling!'}
+            </p>
           )}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {visible.map((e, i) => <EntryCard key={e.id} entry={e} delay={i * 0.03} />)}
