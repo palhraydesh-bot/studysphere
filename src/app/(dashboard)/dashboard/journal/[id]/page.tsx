@@ -3,18 +3,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { ArrowLeft, Lock, LockOpen, Save, Trash2, Sparkles, Calendar, Heart, Lightbulb } from 'lucide-react';
+import { ArrowLeft, Lock, LockOpen, Save, Trash2, Sparkles, Calendar, Heart, Lightbulb, Feather } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { GlassCard } from '@/components/shared/glass-card';
 import { LockDialog } from '@/components/journal/lock-dialog';
-import { DiaryEditor } from '../diary-editor';
 import { useAuth } from '@/hooks/use-auth';
 import { deleteEntry, getEntry, updateEntry } from '@/lib/journal/journal-service';
 import { decryptText, encryptText } from '@/lib/journal/journal-crypto';
 import { cn } from '@/lib/utils';
-import { useJournalStore } from '@/store/journal-store';
-import { summarizeJournal } from '@/lib/journal/stats';
 import type { JournalEntry, Mood } from '@/lib/firestore/journal-schema';
 
 const MOODS: { value: Mood; emoji: string; label: string }[] = [
@@ -22,7 +19,7 @@ const MOODS: { value: Mood; emoji: string; label: string }[] = [
   { value: 'good', emoji: '🙂', label: 'Good' },
   { value: 'okay', emoji: '😐', label: 'Okay' },
   { value: 'bad', emoji: '😔', label: 'Bad' },
-  { value: 'awful', emoji: '😣', label: 'Awful' },
+  { value: 'bad', emoji: '😣', label: 'Awful' },
 ];
 
 const QUOTES = [
@@ -46,14 +43,6 @@ export default function JournalEntryPage() {
   const [dialog, setDialog] = useState<null | 'lock' | 'unlock'>(null);
   const [saving, setSaving] = useState(false);
   const [sessionPass, setSessionPass] = useState<string | null>(null);
-
-  // Existing streak data, reused read-only from the journal store/stats helpers
-  // that already power the dashboard's JournalStats card — purely additive,
-  // doesn't touch save/load logic. If your `summarizeJournal` return shape
-  // uses a different field name, adjust the line below to match it.
-  const { entries: allEntries } = useJournalStore();
-  const stats = summarizeJournal(allEntries) as Record<string, unknown> | undefined;
-  const streak = (stats?.streak ?? stats?.currentStreak) as number | undefined;
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -214,7 +203,20 @@ export default function JournalEntryPage() {
         </GlassCard>
       ) : (
         <>
-          <DiaryEditor value={content} onChange={setContent} streak={streak} />
+          <div className="space-y-2">
+            <label className="flex items-center gap-1.5 text-sm font-medium">
+              Write about your day <Sparkles className="h-3.5 w-3.5 text-primary" />
+            </label>
+            <div className="relative">
+              <textarea
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="Write about your day (Markdown supported)..."
+                className="min-h-[220px] w-full rounded-xl border-2 border-primary/40 bg-background/60 p-4 text-sm shadow-[0_0_24px_-8px_var(--primary)] focus-visible:outline-none focus-visible:border-primary"
+              />
+              <Feather className="pointer-events-none absolute right-4 top-4 h-6 w-6 text-primary/40" />
+            </div>
+          </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <GlassCard>
