@@ -19,7 +19,7 @@ import { generateWeeklyPlan } from '@/lib/planner/ai-generator';
 import { saveWeeklyPlan } from '@/lib/planner/weekly-plan-service';
 import { SUBJECTS, type NewTask, type Subject, type Task } from '@/lib/firestore/planner-schema';
 import { cn } from '@/lib/utils';
-
+import { AiSmartPlanner } from '@/components/planner/premium/ai-smart-planner';
 type Tab = 'daily' | 'weekly' | 'monthly' | 'ai';
 const TABS: { id: Tab; label: string }[] = [
   { id: 'daily', label: 'Daily' },
@@ -85,6 +85,7 @@ export default function PlannerPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      <AiSmartPlanner weeklySlots={weeklySlots} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Study Planner</h1>
