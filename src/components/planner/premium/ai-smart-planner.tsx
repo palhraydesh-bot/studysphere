@@ -13,7 +13,6 @@ import { useAuth } from '@/hooks/use-auth';
 import { generateWeeklyPlan } from '@/lib/planner/ai-generator';
 import { saveWeeklyPlan } from '@/lib/planner/weekly-plan-service';
 import { SUBJECTS, type Subject, type WeeklySlot } from '@/lib/firestore/planner-schema';
-import { subjectMeta } from '@/lib/planner/subject-meta';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -137,7 +136,13 @@ export function AiSmartPlanner({ weeklySlots }: { weeklySlots: WeeklySlot[] }) {
                 ) : (
                   <div className="space-y-1.5">
                     {daySlots.map((s, i) => {
-                      const meta = subjectMeta(s.subject);
+  const meta = {
+    glow: '#8b5cf6',
+    icon: Sparkles
+  };
+
+  
+                    
                       return (
                         <div key={i} className="flex items-center gap-1.5 rounded-lg bg-white/5 px-2 py-1 text-xs">
                           <meta.icon className="h-3 w-3 shrink-0" style={{ color: meta.glow }} />
