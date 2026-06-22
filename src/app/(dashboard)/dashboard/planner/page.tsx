@@ -20,6 +20,8 @@ import { saveWeeklyPlan } from '@/lib/planner/weekly-plan-service';
 import { SUBJECTS, type NewTask, type Subject, type Task } from '@/lib/firestore/planner-schema';
 import { cn } from '@/lib/utils';
 import { AiSmartPlanner } from '@/components/planner/premium/ai-smart-planner';
+import { usePlannerInsights } from '@/hooks/use-planner-insights';
+import { PlannerHero } from '@/components/planner/premium/planner-hero';
 type Tab = 'daily' | 'weekly' | 'monthly' | 'ai';
 const TABS: { id: Tab; label: string }[] = [
   { id: 'daily', label: 'Daily' },
@@ -35,6 +37,7 @@ export default function PlannerPage() {
   const { tasks, loading } = usePlannerStore();
   const weeklySlots = usePlannerStore((s) => s.weeklySlots);
   const weeklyLoading = usePlannerStore((s) => s.weeklyLoading);
+  const insights = usePlannerInsights();
 
   const [tab, setTab] = useState<Tab>('daily');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -85,6 +88,7 @@ export default function PlannerPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      <PlannerHero insights={insights} />
       <AiSmartPlanner weeklySlots={weeklySlots} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
