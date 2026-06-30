@@ -8,7 +8,8 @@ export const XP_REWARDS = {
   completePomodoro: 15,
   journalEntry: 8,
   reviewFlashcard: 2,
-  createNote: 5
+  createNote: 5,
+  completeHabit: 15
 } as const;
 
 export type XpAction = keyof typeof XP_REWARDS;

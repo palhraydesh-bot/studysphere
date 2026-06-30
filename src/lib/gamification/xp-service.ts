@@ -15,6 +15,9 @@ export interface GamificationProfile {
   journalEntries: number;
   flashcardsReviewed: number;
   notesCreated: number;
+
+  habitsCompleted: number; // <-- NEW
+
   earnedBadgeIds: string[];
 }
 
@@ -25,6 +28,9 @@ export const DEFAULT_PROFILE: GamificationProfile = {
   journalEntries: 0,
   flashcardsReviewed: 0,
   notesCreated: 0,
+
+  habitsCompleted: 0, // <-- NEW
+
   earnedBadgeIds: []
 };
 
@@ -40,7 +46,8 @@ const ACTION_COUNTER: Partial<Record<XpAction, keyof GamificationProfile>> = {
   completePomodoro: 'pomodorosCompleted',
   journalEntry: 'journalEntries',
   reviewFlashcard: 'flashcardsReviewed',
-  createNote: 'notesCreated'
+  createNote: 'notesCreated',
+  completeHabit: 'habitsCompleted'
 };
 
 /** Live-subscribe to the gamification profile. */
