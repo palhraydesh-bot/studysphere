@@ -23,13 +23,15 @@ import { AiSmartPlanner } from '@/components/planner/premium/ai-smart-planner';
 import { usePlannerInsights } from '@/hooks/use-planner-insights';
 import { PlannerHero } from '@/components/planner/premium/planner-hero';
 
-// New Premium Life OS Tab Component Imports
+// Added Life OS module imports
 import { GoalsTab } from '@/components/planner/premium/goals-tab';
 import { HabitsTab } from '@/components/planner/premium/habits-tab';
 import { ExamsTab } from '@/components/planner/premium/exams-tab';
 
+// Extended existing tab union type
 type Tab = 'daily' | 'weekly' | 'monthly' | 'ai' | 'goals' | 'habits' | 'exams';
 
+// Extended existing TABS configuration array
 const TABS: { id: Tab; label: string }[] = [
   { id: 'daily', label: 'Daily' },
   { id: 'weekly', label: 'Weekly' },
@@ -222,7 +224,7 @@ export default function PlannerPage() {
         </div>
       )}
 
-      {/* New Life OS Functional Premium Content Tab Panes */}
+      {/* Embedded Life OS Premium Tab Rendering Views */}
       {tab === 'goals' && (
         <div className="space-y-4 animate-in fade-in duration-200">
           <GoalsTab userId={userId} />
