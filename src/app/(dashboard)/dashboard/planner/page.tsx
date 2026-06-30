@@ -22,12 +22,22 @@ import { cn } from '@/lib/utils';
 import { AiSmartPlanner } from '@/components/planner/premium/ai-smart-planner';
 import { usePlannerInsights } from '@/hooks/use-planner-insights';
 import { PlannerHero } from '@/components/planner/premium/planner-hero';
-type Tab = 'daily' | 'weekly' | 'monthly' | 'ai';
+
+// New Premium Life OS Tab Component Imports
+import { GoalsTab } from '@/components/planner/premium/goals-tab';
+import { HabitsTab } from '@/components/planner/premium/habits-tab';
+import { ExamsTab } from '@/components/planner/premium/exams-tab';
+
+type Tab = 'daily' | 'weekly' | 'monthly' | 'ai' | 'goals' | 'habits' | 'exams';
+
 const TABS: { id: Tab; label: string }[] = [
   { id: 'daily', label: 'Daily' },
   { id: 'weekly', label: 'Weekly' },
   { id: 'monthly', label: 'Monthly' },
-  { id: 'ai', label: 'AI Planner' }
+  { id: 'ai', label: 'AI Planner' },
+  { id: 'goals', label: 'Goals' },
+  { id: 'habits', label: 'Habits' },
+  { id: 'exams', label: 'Exams' }
 ];
 
 export default function PlannerPage() {
@@ -47,6 +57,8 @@ export default function PlannerPage() {
   const [picked, setPicked] = useState<Subject[]>(['Mathematics', 'Physics']);
   const [weeklyHours, setWeeklyHours] = useState(14);
   const [generating, setGenerating] = useState(false);
+
+  const userId = user?.uid || 'dev_sandbox';
 
   const grouped = useMemo(() => {
     const pending = tasks.filter((t) => !t.completed);
@@ -207,6 +219,25 @@ export default function PlannerPage() {
               {generating ? 'Generating...' : 'Generate plan'}
             </Button>
           </GlassCard>
+        </div>
+      )}
+
+      {/* New Life OS Functional Premium Content Tab Panes */}
+      {tab === 'goals' && (
+        <div className="space-y-4 animate-in fade-in duration-200">
+          <GoalsTab userId={userId} />
+        </div>
+      )}
+
+      {tab === 'habits' && (
+        <div className="space-y-4 animate-in fade-in duration-200">
+          <HabitsTab userId={userId} />
+        </div>
+      )}
+
+      {tab === 'exams' && (
+        <div className="space-y-4 animate-in fade-in duration-200">
+          <ExamsTab userId={userId} />
         </div>
       )}
 
