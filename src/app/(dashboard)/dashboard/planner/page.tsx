@@ -106,7 +106,7 @@ export default function PlannerPage() {
       <AiSmartPlanner weeklySlots={weeklySlots} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white">Study Planner</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-red-500"> LIFE OS TEST 123</h1>
           <p className="text-sm text-muted-foreground">Plan daily tasks, weekly schedules and let AI balance your week.</p>
         </div>
         {tab === 'daily' && (
