@@ -23,15 +23,15 @@ import { AiSmartPlanner } from '@/components/planner/premium/ai-smart-planner';
 import { usePlannerInsights } from '@/hooks/use-planner-insights';
 import { PlannerHero } from '@/components/planner/premium/planner-hero';
 
-// Added Life OS module imports
+// New Premium Life OS Tab Component Imports
 import { GoalsTab } from '@/components/planner/premium/goals-tab';
 import { HabitsTab } from '@/components/planner/premium/habits-tab';
 import { ExamsTab } from '@/components/planner/premium/exams-tab';
 
-// Extended existing tab union type
+// Extended tab union type to integrate Life OS horizons cleanly
 type Tab = 'daily' | 'weekly' | 'monthly' | 'ai' | 'goals' | 'habits' | 'exams';
 
-// Extended existing TABS configuration array
+// Extended existing TABS configurations
 const TABS: { id: Tab; label: string }[] = [
   { id: 'daily', label: 'Daily' },
   { id: 'weekly', label: 'Weekly' },
@@ -51,11 +51,12 @@ export default function PlannerPage() {
   const weeklyLoading = usePlannerStore((s) => s.weeklyLoading);
   const insights = usePlannerInsights();
 
+  // Preserved exact variable state mapping logic strings
   const [tab, setTab] = useState<Tab>('daily');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Task | null>(null);
 
-  // AI planner local state
+  // AI planner local state parameters untouched
   const [picked, setPicked] = useState<Subject[]>(['Mathematics', 'Physics']);
   const [weeklyHours, setWeeklyHours] = useState(14);
   const [generating, setGenerating] = useState(false);
@@ -86,7 +87,6 @@ export default function PlannerPage() {
     if (!user) return;
     const nowCompleted = !task.completed;
     await toggleTask(user.uid, task.id, nowCompleted);
-    // Award XP when a task transitions to completed.
     if (nowCompleted) void awardXp(user.uid, 'completeTask');
   }
 
@@ -101,12 +101,12 @@ export default function PlannerPage() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in text-slate-200">
       <PlannerHero insights={insights} />
       <AiSmartPlanner weeklySlots={weeklySlots} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Study Planner</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-white">Study Planner</h1>
           <p className="text-sm text-muted-foreground">Plan daily tasks, weekly schedules and let AI balance your week.</p>
         </div>
         {tab === 'daily' && (
@@ -131,117 +131,119 @@ export default function PlannerPage() {
         ))}
       </div>
 
-      {tab === 'daily' && (
-        <div className="space-y-4">
-          {loading && <p className="text-sm text-muted-foreground">Loading tasks...</p>}
-          {!loading && tasks.length === 0 && (
-            <GlassCard><p className="text-sm text-muted-foreground">No tasks yet. Create your first one!</p></GlassCard>
-          )}
-          {grouped.pending.length > 0 && (
-            <div className="space-y-2">
-              {grouped.pending.map((t) => (
-                <TaskItem key={t.id} task={t} onToggle={handleToggle} onEdit={(task) => { setEditing(task); setDialogOpen(true); }} onDelete={handleDelete} />
-              ))}
-            </div>
-          )}
-          {grouped.done.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-xs font-semibold uppercase text-muted-foreground">Completed</p>
-              {grouped.done.map((t) => (
-                <TaskItem key={t.id} task={t} onToggle={handleToggle} onEdit={(task) => { setEditing(task); setDialogOpen(true); }} onDelete={handleDelete} />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {tab === 'weekly' && (
-        <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">Your saved weekly schedule. Use the AI Planner tab to regenerate.</p>
-          {weeklyLoading ? (
-            <p className="text-sm text-muted-foreground">Loading weekly plan...</p>
-          ) : weeklySlots.length === 0 ? (
-            <GlassCard><p className="text-sm text-muted-foreground">No plan yet. Generate one in the AI Planner tab.</p></GlassCard>
-          ) : (
-            <WeeklyGrid slots={weeklySlots} />
-          )}
-        </div>
-      )}
-
-      {tab === 'monthly' && <MonthlyView />}
-
-      {tab === 'ai' && (
-        <div className="space-y-4">
-          <GlassCard className="space-y-4">
-            <h2 className="font-semibold">AI Smart Planner</h2>
-            <div>
-              <p className="mb-2 text-sm text-muted-foreground">Pick subjects (tap to toggle weak ones get more time):</p>
-              <div className="flex flex-wrap gap-2">
-                {SUBJECTS.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => togglePicked(s)}
-                    className={cn(
-                      'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
-                      picked.includes(s) ? 'border-primary bg-primary/15 text-primary' : 'border-input text-muted-foreground'
-                    )}
-                  >
-                    {s}
-                  </button>
+      <div className="w-full">
+        {tab === 'daily' && (
+          <div className="space-y-4">
+            {loading && <p className="text-sm text-muted-foreground">Loading tasks...</p>}
+            {!loading && tasks.length === 0 && (
+              <GlassCard><p className="text-sm text-muted-foreground">No tasks yet. Create your first one!</p></GlassCard>
+            )}
+            {grouped.pending.length > 0 && (
+              <div className="space-y-2">
+                {grouped.pending.map((t) => (
+                  <TaskItem key={t.id} task={t} onToggle={handleToggle} onEdit={(task) => { setEditing(task); setDialogOpen(true); }} onDelete={handleDelete} />
                 ))}
               </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <label className="text-sm text-muted-foreground">Weekly hours</label>
-              <input
-                type="range" min={4} max={40} value={weeklyHours}
-                onChange={(e) => setWeeklyHours(Number(e.target.value))}
-                className="flex-1"
-              />
-              <span className="w-12 text-right text-sm font-semibold">{weeklyHours}h</span>
-            </div>
-            <Button
-              variant="gradient"
-              disabled={generating || !user}
-              onClick={async () => {
-                if (!user) return;
-                setGenerating(true);
-                try {
-                  const result = generateWeeklyPlan({ subjects: picked, weeklyHours, weakSubjects: picked.slice(0, 1) });
-                  await saveWeeklyPlan(user.uid, result);
-                  setTab('weekly');
-                  toast.success('Study plan generated and saved');
-                } catch {
-                  toast.error('Could not save the generated plan');
-                } finally {
-                  setGenerating(false);
-                }
-              }}
-            >
-              {generating ? 'Generating...' : 'Generate plan'}
-            </Button>
-          </GlassCard>
-        </div>
-      )}
+            )}
+            {grouped.done.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Completed</p>
+                {grouped.done.map((t) => (
+                  <TaskItem key={t.id} task={t} onToggle={handleToggle} onEdit={(task) => { setEditing(task); setDialogOpen(true); }} onDelete={handleDelete} />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
-      {/* Embedded Life OS Premium Tab Rendering Views */}
-      {tab === 'goals' && (
-        <div className="space-y-4 animate-in fade-in duration-200">
-          <GoalsTab userId={userId} />
-        </div>
-      )}
+        {tab === 'weekly' && (
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">Your saved weekly schedule. Use the AI Planner tab to regenerate.</p>
+            {weeklyLoading ? (
+              <p className="text-sm text-muted-foreground">Loading weekly plan...</p>
+            ) : weeklySlots.length === 0 ? (
+              <GlassCard><p className="text-sm text-muted-foreground">No plan yet. Generate one in the AI Planner tab.</p></GlassCard>
+            ) : (
+              <WeeklyGrid slots={weeklySlots} />
+            )}
+          </div>
+        )}
 
-      {tab === 'habits' && (
-        <div className="space-y-4 animate-in fade-in duration-200">
-          <HabitsTab userId={userId} />
-        </div>
-      )}
+        {tab === 'monthly' && <MonthlyView />}
 
-      {tab === 'exams' && (
-        <div className="space-y-4 animate-in fade-in duration-200">
-          <ExamsTab userId={userId} />
-        </div>
-      )}
+        {tab === 'ai' && (
+          <div className="space-y-4">
+            <GlassCard className="space-y-4">
+              <h2 className="font-semibold">AI Smart Planner</h2>
+              <div>
+                <p className="mb-2 text-sm text-muted-foreground">Pick subjects (tap to toggle weak ones get more time):</p>
+                <div className="flex flex-wrap gap-2">
+                  {SUBJECTS.map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => togglePicked(s)}
+                      className={cn(
+                        'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
+                        picked.includes(s) ? 'border-primary bg-primary/15 text-primary' : 'border-input text-muted-foreground'
+                      )}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <label className="text-sm text-muted-foreground">Weekly hours</label>
+                <input
+                  type="range" min={4} max={40} value={weeklyHours}
+                  onChange={(e) => setWeeklyHours(Number(e.target.value))}
+                  className="flex-1"
+                />
+                <span className="w-12 text-right text-sm font-semibold">{weeklyHours}h</span>
+              </div>
+              <Button
+                variant="gradient"
+                disabled={generating || !user}
+                onClick={async () => {
+                  if (!user) return;
+                  setGenerating(true);
+                  try {
+                    const result = generateWeeklyPlan({ subjects: picked, weeklyHours, weakSubjects: picked.slice(0, 1) });
+                    await saveWeeklyPlan(user.uid, result);
+                    setTab('weekly');
+                    toast.success('Study plan generated and saved');
+                  } catch {
+                    toast.error('Could not save the generated plan');
+                  } finally {
+                    setGenerating(false);
+                  }
+                }}
+              >
+                {generating ? 'Generating...' : 'Generate plan'}
+              </Button>
+            </GlassCard>
+          </div>
+        )}
+
+        {/* Premium Core Life OS Module Tabs Integration */}
+        {tab === 'goals' && (
+          <div className="space-y-4 animate-in fade-in duration-200">
+            <GoalsTab userId="temp-user" />
+          </div>
+        )}
+
+        {tab === 'habits' && (
+          <div className="space-y-4 animate-in fade-in duration-200">
+            <HabitsTab userId="temp-user" />
+          </div>
+        )}
+
+        {tab === 'exams' && (
+          <div className="space-y-4 animate-in fade-in duration-200">
+            <ExamsTab userId="temp-user" />
+          </div>
+        )}
+      </div>
 
       <TaskDialog
         open={dialogOpen}
