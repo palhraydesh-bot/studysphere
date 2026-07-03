@@ -19,7 +19,7 @@ export function Topbar() {
   }
 
   return (
-    <header className="glass sticky top-0 z-20 flex h-16 items-center justify-between rounded-none px-4 md:px-6">
+    <header className="glass sticky top-0 z-20 flex h-16 items-center justify-between rounded-none px-4 md:px-6 bg-[#0d0d1a]/80 backdrop-blur-xl">
       <div className="flex items-center gap-2">
         <Button
           variant="ghost"
