@@ -1,15 +1,17 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { LogOut, User as UserIcon, Bell, Search } from 'lucide-react';
+import { LogOut, User as UserIcon, Bell, Search, Menu } from 'lucide-react';
 import { ThemeToggle } from '@/components/shared/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
 import { signOut } from '@/lib/auth/service';
+import { useMobileNavStore } from '@/store/use-mobile-nav-store';
 
 export function Topbar() {
   const { user } = useAuth();
   const router = useRouter();
+  const { openDrawer } = useMobileNavStore();
 
   async function handleSignOut() {
     await signOut();
@@ -17,12 +19,24 @@ export function Topbar() {
   }
 
   return (
-    <header className="glass sticky top-0 z-10 flex h-16 items-center justify-between rounded-none px-4 md:px-6">
-      {/* Search Bar */}
-      <div className="flex items-center gap-2 bg-muted rounded-lg px-3 py-2 w-64 hidden md:flex">
-        <Search className="h-4 w-4 text-muted-foreground" />
-        <span className="text-sm text-muted-foreground">Search anything...</span>
-        <span className="ml-auto text-xs text-muted-foreground border rounded px-1">Ctrl K</span>
+    <header className="glass sticky top-0 z-20 flex h-16 items-center justify-between rounded-none px-4 md:px-6">
+      <div className="flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="md:hidden"
+          aria-label="Open menu"
+          onClick={openDrawer}
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
+
+        {/* Search Bar */}
+        <div className="hidden md:flex items-center gap-2 bg-muted rounded-lg px-3 py-2 w-64">
+          <Search className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">Search anything...</span>
+          <span className="ml-auto text-xs text-muted-foreground border rounded px-1">Ctrl K</span>
+        </div>
       </div>
 
       {/* Right Side */}
