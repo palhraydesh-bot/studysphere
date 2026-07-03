@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'StudySphere',
 
   server: {
-    url: 'https://studyspherebyshubh-main-4qx8k15ub-studysphere2026.vercel.app',
+    url: 'https://studyspherebyshubh-main.vercel.app',
     cleartext: true
   }
 };
