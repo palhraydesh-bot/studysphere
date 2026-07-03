@@ -5,18 +5,16 @@ function initAdmin(): App {
   const existing = getApps();
   if (existing.length) return existing[0];
 
-  const projectId = process.env.FIREBASE_PROJECT_ID;
-  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+  const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
 
-  if (!projectId || !clientEmail || !privateKey) {
-    throw new Error(
-      'Missing Firebase Admin credentials. Set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY.'
-    );
+  if (!raw) {
+    throw new Error('Missing FIREBASE_SERVICE_ACCOUNT environment variable.');
   }
 
+  const serviceAccount = JSON.parse(raw);
+
   return initializeApp({
-    credential: cert({ projectId, clientEmail, privateKey }),
+    credential: cert(serviceAccount),
   });
 }
 
