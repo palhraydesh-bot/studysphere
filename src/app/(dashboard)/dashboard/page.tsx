@@ -3,6 +3,12 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { GlassCard } from "@/components/dashboard/glass-card";
+import { StatCard } from "@/components/dashboard/stat-card";
+import { SectionHeader } from "@/components/dashboard/section-header";
+import { PremiumButton } from "@/components/dashboard/premium-button";
+import { PremiumProgress } from "@/components/dashboard/premium-progress";
+import { AchievementCard } from "@/components/dashboard/achievement-card";
 
 function Sparkline({ color = "#a78bfa", up = true }: { color?: string; up?: boolean }) {
   const pts = up ? "0,28 10,22 20,24 30,14 40,18 50,8 60,12" : "0,12 10,18 20,14 30,24 40,20 50,28 60,22";
@@ -91,6 +97,13 @@ const ACHIEVEMENTS_LIST = [
 
 const AI_SUGGESTIONS = ["Explain photosynthesis", "Solve this integral", "Newton's 3rd law", "Basic concepts of EMI"];
 
+const DAILY_QUOTES = [
+  { text: "Discipline is choosing between what you want now and what you want most.", author: "Abraham Lincoln" },
+  { text: "Small daily improvements lead to staggering long-term results.", author: "Robin Sharma" },
+  { text: "The expert in anything was once a beginner.", author: "Helen Hayes" },
+  { text: "Success is the sum of small efforts repeated day in and day out.", author: "Robert Collier" },
+];
+
 const INITIAL_TASKS = [
   { id: 1, title: "Physics: Laws of Motion", time: "45m", done: true },
   { id: 2, title: "Maths: Trigonometry", time: "60m", done: true },
@@ -102,14 +115,17 @@ export default function DashboardPage() {
   const router = useRouter();
   const [aiQuery, setAiQuery] = useState("");
   const [tasks, setTasks] = useState(INITIAL_TASKS);
+  const [quote, setQuote] = useState(DAILY_QUOTES[0]);
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : "Good Evening";
 
-  // persist task state
   useEffect(() => {
     const saved = localStorage.getItem("ss_today_tasks");
     if (saved) setTasks(JSON.parse(saved));
+    // Deterministic-ish daily quote based on day of year, avoids hydration mismatch risk since it's client-only effect
+    const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
+    setQuote(DAILY_QUOTES[dayOfYear % DAILY_QUOTES.length]);
   }, []);
 
   const toggleTask = (id: number) => {
@@ -126,11 +142,16 @@ export default function DashboardPage() {
     router.push(`/dashboard/assistant?q=${encodeURIComponent(aiQuery)}`);
   };
 
+  // Daily study goal (static placeholder — wire to real tracking data when available)
+  const STUDY_GOAL_MINUTES = 240; // 4h
+  const STUDY_DONE_MINUTES = 165; // 2h45m
+  const goalPct = Math.round((STUDY_DONE_MINUTES / STUDY_GOAL_MINUTES) * 100);
+
   return (
     <div className="min-h-screen bg-[#0d0d1a] text-white">
       <div className="p-4 md:p-6 max-w-[1400px] mx-auto space-y-5">
 
-        {/* ── HEADER ── */}
+        {/* ── HERO HEADER ── */}
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <p className="text-gray-400 text-sm">{greeting},</p>
@@ -139,39 +160,36 @@ export default function DashboardPage() {
             </h1>
             <p className="text-gray-500 text-sm mt-0.5">Consistency today, success tomorrow.</p>
           </div>
-          <button
-            onClick={() => router.push("/dashboard/planner")}
-            className="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 active:scale-95 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition-all shadow-lg shadow-violet-900/40"
-          >
+          <PremiumButton onClick={() => router.push("/dashboard/planner")}>
             <span>+</span> Quick Add
-          </button>
+          </PremiumButton>
         </div>
 
         {/* ── STAT CARDS ── */}
         <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
-          {[
-            { icon: "⏱️", label: "Study Time Today", value: "2h 45m", sub: "↑ 28% vs yesterday", c: "text-green-400" },
-            { icon: "🔥", label: "Streak", value: "12 Days", sub: "Keep it going!", c: "text-orange-400" },
-            { icon: "⚡", label: "Focus Score", value: "82/100", sub: "Excellent! 🔥", c: "text-violet-400" },
-            { icon: "✅", label: "Tasks Done", value: `${doneTasks}/${tasks.length}`, sub: "Keep pushing!", c: "text-blue-400" },
-            { icon: "⭐", label: "XP Today", value: "220 XP", sub: "Total XP: 3250", c: "text-yellow-400" },
-          ].map((s) => (
-            <div key={s.label} className="bg-white/5 border border-white/10 rounded-2xl p-4 flex-1 min-w-[140px]">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-lg">{s.icon}</span>
-                <span className="text-xs text-gray-400 truncate">{s.label}</span>
-              </div>
-              <p className="text-xl font-bold text-white">{s.value}</p>
-              <p className={`text-xs mt-1 ${s.c}`}>{s.sub}</p>
-            </div>
-          ))}
+          <StatCard icon="⏱️" label="Study Time Today" value="2h 45m" sub="↑ 28% vs yesterday" subClassName="text-green-400" />
+          <StatCard icon="🔥" label="Streak" value="12 Days" sub="Keep it going!" subClassName="text-orange-400" />
+          <StatCard icon="⚡" label="Focus Score" value="82/100" sub="Excellent! 🔥" subClassName="text-violet-400" />
+          <StatCard icon="✅" label="Tasks Done" value={`${doneTasks}/${tasks.length}`} sub="Keep pushing!" subClassName="text-blue-400" />
+          <StatCard icon="⭐" label="XP Today" value="220 XP" sub="Total XP: 3250" subClassName="text-yellow-400" />
         </div>
+
+        {/* ── DAILY QUOTE ── */}
+        <GlassCard className="bg-gradient-to-r from-violet-950/40 to-blue-950/20 border-violet-500/20">
+          <div className="flex items-start gap-3">
+            <span className="text-2xl leading-none">💬</span>
+            <div>
+              <p className="text-sm italic text-gray-200 leading-relaxed">&ldquo;{quote.text}&rdquo;</p>
+              <p className="text-xs text-violet-400 mt-1.5">— {quote.author}</p>
+            </div>
+          </div>
+        </GlassCard>
 
         {/* ── CHART + SUBJECTS + AI TUTOR ── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
           {/* Study Overview */}
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+          <GlassCard>
             <div className="flex items-center justify-between mb-1">
               <h2 className="font-semibold text-white">Study Overview</h2>
               <span className="text-xs bg-white/10 text-gray-300 px-2 py-1 rounded-lg">This Week</span>
@@ -179,37 +197,26 @@ export default function DashboardPage() {
             <p className="text-2xl font-bold text-white mt-1">18h 30m</p>
             <p className="text-xs text-green-400 mb-3">↑ 32% vs last week</p>
             <WeeklyChart />
-          </div>
+          </GlassCard>
 
           {/* Subjects Progress */}
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+          <GlassCard>
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-semibold text-white">Subjects Progress</h2>
               <span className="text-violet-400 font-semibold text-sm">68%</span>
             </div>
             <div className="mb-4">
-              <div className="flex justify-between text-xs text-gray-400 mb-1">
-                <span>Overall Progress</span><span>68%</span>
-              </div>
-              <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                <div className="h-full rounded-full bg-gradient-to-r from-violet-500 to-blue-500" style={{ width: "68%" }} />
-              </div>
+              <PremiumProgress value={68} label="Overall Progress" />
             </div>
             {SUBJECTS.map((s) => (
               <div key={s.name} className="mb-3">
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-300">{s.name}</span>
-                  <span className="text-gray-400">{s.pct}%</span>
-                </div>
-                <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                  <div className="h-full rounded-full" style={{ width: `${s.pct}%`, background: s.color }} />
-                </div>
+                <PremiumProgress value={s.pct} label={s.name} color={s.color} barClassName="" />
               </div>
             ))}
-          </div>
+          </GlassCard>
 
           {/* AI Tutor */}
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-5 flex flex-col">
+          <GlassCard className="flex flex-col">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-xl bg-violet-600 flex items-center justify-center text-xl">🤖</div>
               <div>
@@ -254,7 +261,56 @@ export default function DashboardPage() {
                 </Link>
               ))}
             </div>
-          </div>
+          </GlassCard>
+        </div>
+
+        {/* ── FOCUS TIMER + STUDY GOAL + WEEKLY INSIGHTS ── */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+          {/* Focus Timer widget */}
+          <GlassCard className="flex flex-col items-center text-center">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 self-start">Focus Timer</p>
+            <div className="relative w-24 h-24 flex items-center justify-center mb-3">
+              <svg className="w-24 h-24 -rotate-90">
+                <circle cx="48" cy="48" r="40" stroke="#ffffff15" strokeWidth="6" fill="none" />
+                <circle cx="48" cy="48" r="40" stroke="#8b5cf6" strokeWidth="6" fill="none"
+                  strokeDasharray={2 * Math.PI * 40} strokeDashoffset={2 * Math.PI * 40 * 0.32} strokeLinecap="round" />
+              </svg>
+              <span className="absolute text-sm font-bold text-white">17:02</span>
+            </div>
+            <p className="text-xs text-gray-500 mb-3">Deep Focus Session</p>
+            <Link href="/dashboard/focus" className="w-full">
+              <PremiumButton size="sm" className="w-full">Resume Focus</PremiumButton>
+            </Link>
+          </GlassCard>
+
+          {/* Study Goal Progress */}
+          <GlassCard>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Study Goal</p>
+            <p className="text-2xl font-bold text-white">2h 45m <span className="text-sm font-normal text-gray-500">/ 4h</span></p>
+            <p className="text-xs text-gray-500 mb-4">{goalPct}% of today&apos;s goal complete</p>
+            <PremiumProgress value={goalPct} showValue={false} />
+            <p className="text-xs text-violet-400 mt-3">🎯 1h 15m left to hit your goal</p>
+          </GlassCard>
+
+          {/* Weekly Insights */}
+          <GlassCard>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Weekly Insights</p>
+            <div className="space-y-2.5">
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-green-400">↑</span>
+                <span className="text-gray-300">Most productive day: <span className="text-white font-medium">Saturday</span></span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-violet-400">⏰</span>
+                <span className="text-gray-300">Peak focus time: <span className="text-white font-medium">4–6 PM</span></span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-orange-400">📚</span>
+                <span className="text-gray-300">Top subject: <span className="text-white font-medium">Physics</span></span>
+              </div>
+            </div>
+          </GlassCard>
         </div>
 
         {/* ── STUDY TOOLS ── */}
@@ -279,11 +335,8 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 
           {/* Today's Plan */}
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="font-semibold text-white">Today's Plan</h2>
-              <Link href="/dashboard/planner" className="text-xs text-violet-400 hover:text-violet-300">View Planner</Link>
-            </div>
+          <GlassCard>
+            <SectionHeader title="Today's Plan" actionLabel="View Planner" actionHref="/dashboard/planner" />
             <div className="space-y-2.5">
               {tasks.map((t) => (
                 <button key={t.id} onClick={() => toggleTask(t.id)}
@@ -297,18 +350,12 @@ export default function DashboardPage() {
               ))}
             </div>
             <div className="mt-4">
-              <div className="flex justify-between text-xs text-gray-400 mb-1">
-                <span>{doneTasks}/{tasks.length} tasks completed</span>
-                <span>{pct}%</span>
-              </div>
-              <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                <div className="h-full rounded-full bg-gradient-to-r from-violet-500 to-blue-500 transition-all duration-500" style={{ width: `${pct}%` }} />
-              </div>
+              <PremiumProgress value={pct} label={`${doneTasks}/${tasks.length} tasks completed`} />
             </div>
-          </div>
+          </GlassCard>
 
           {/* Performance Analytics */}
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+          <GlassCard>
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-semibold text-white">Performance Analytics</h2>
               <span className="text-xs bg-white/10 text-gray-300 px-2 py-1 rounded-lg">This Month</span>
@@ -331,14 +378,11 @@ export default function DashboardPage() {
               className="block text-center text-xs text-violet-400 hover:text-violet-300 border border-white/10 hover:border-violet-500/40 rounded-lg py-2 transition-colors">
               View Detailed Analytics →
             </Link>
-          </div>
+          </GlassCard>
 
           {/* Revision Alert */}
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="font-semibold text-white">Revision Alert</h2>
-              <Link href="/dashboard/subjects" className="text-xs text-violet-400 hover:text-violet-300">View All</Link>
-            </div>
+          <GlassCard>
+            <SectionHeader title="Revision Alert" actionLabel="View All" actionHref="/dashboard/subjects" />
             <div className="space-y-3">
               {REVISION_ALERTS.map((r) => (
                 <Link key={r.topic} href="/dashboard/subjects"
@@ -354,33 +398,21 @@ export default function DashboardPage() {
                 </Link>
               ))}
             </div>
-          </div>
+          </GlassCard>
 
           {/* Achievements */}
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="font-semibold text-white">Achievements</h2>
-              <Link href="/dashboard/achievements" className="text-xs text-violet-400 hover:text-violet-300">View All</Link>
-            </div>
+          <GlassCard>
+            <SectionHeader title="Achievements" actionLabel="View All" actionHref="/dashboard/achievements" />
             <div className="space-y-3">
               {ACHIEVEMENTS_LIST.map((a) => (
-                <Link key={a.title} href="/dashboard/achievements"
-                  className="flex items-center gap-3 p-2.5 rounded-xl bg-white/5 hover:bg-white/10 transition-colors block">
-                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-600 to-blue-600 flex items-center justify-center text-lg flex-shrink-0">
-                    {a.icon}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-white">{a.title}</p>
-                    <p className="text-xs text-gray-500">{a.desc}</p>
-                  </div>
-                </Link>
+                <AchievementCard key={a.title} icon={a.icon} title={a.title} description={a.desc} href="/dashboard/achievements" />
               ))}
             </div>
-          </div>
+          </GlassCard>
         </div>
 
         {/* ── BOTTOM STATS BAR ── */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+        <GlassCard>
           <div className="flex items-center justify-between gap-4 flex-wrap">
             {[
               { icon: "🎯", label: "Daily Goal", value: "2h 45m / 4h", link: "/dashboard/focus" },
@@ -399,7 +431,7 @@ export default function DashboardPage() {
               </Link>
             ))}
           </div>
-        </div>
+        </GlassCard>
 
       </div>
     </div>
