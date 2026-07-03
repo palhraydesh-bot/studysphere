@@ -72,19 +72,3 @@
   .prose-note pre { @apply my-3 overflow-x-auto rounded-lg bg-muted p-3; }
   .prose-note pre code { @apply bg-transparent p-0; }
 }
-@layer base {
-  html, body {
-    overflow-x: hidden;
-    overscroll-behavior-y: none;
-  }
-}
-
-@layer utilities {
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-}
