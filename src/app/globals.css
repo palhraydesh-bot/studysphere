@@ -71,6 +71,8 @@
   .prose-note code { @apply rounded bg-muted px-1 py-0.5 font-mono text-xs; }
   .prose-note pre { @apply my-3 overflow-x-auto rounded-lg bg-muted p-3; }
   .prose-note pre code { @apply bg-transparent p-0; }
+}
+
 @layer base {
   html,
   body {
