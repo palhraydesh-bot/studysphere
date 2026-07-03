@@ -148,7 +148,7 @@ export default function DashboardPage() {
   const goalPct = Math.round((STUDY_DONE_MINUTES / STUDY_GOAL_MINUTES) * 100);
 
   return (
-    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-[#0d0d1a] text-white">
+    <div className="min-h-screen bg-[#0d0d1a] text-white">
       <div className="p-4 md:p-6 max-w-[1400px] mx-auto space-y-5">
 
         {/* ── HERO HEADER ── */}

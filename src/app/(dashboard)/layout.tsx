@@ -17,7 +17,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       <div className="flex min-h-screen flex-1 flex-col">
         <Topbar />
-        <main className="flex-1 w-full max-w-full overflow-x-hidden p-4 pb-24 md:p-6 md:pb-6">{children}</main>
+        <main className="flex-1 p-4 pb-24 md:p-6 md:pb-6">{children}</main>
       </div>
 
       <MobileBottomNav />
