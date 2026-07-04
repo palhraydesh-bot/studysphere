@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase/client";
 import { GlassCard } from "@/components/dashboard/glass-card";
@@ -86,19 +86,10 @@ const MOBILE_QUICK_ACTIONS = [
   { icon: "📔", label: "Journal", link: "/dashboard/journal", color: "#f97316" },
 ];
 
-const BOTTOM_NAV = [
-  { icon: "🏠", label: "Home", href: "/dashboard" },
-  { icon: "📅", label: "Planner", href: "/dashboard/planner" },
-  { icon: "🎯", label: "Focus", href: "/dashboard/focus" },
-  { icon: "📝", label: "Notes", href: "/dashboard/notes" },
-  { icon: "✨", label: "AI", href: "/dashboard/assistant" },
-];
-
 // Level / XP — static placeholder, wire to real profile/XP tracking when available
 const USER_LEVEL = 14;
 const XP_CURRENT = 3250;
 const XP_NEXT_LEVEL = 5000;
-const NOTIFICATION_COUNT = 3;
 
 // Focus Shield — static placeholder, wire to real app-blocking state when available
 const FOCUS_SHIELD_ON = true;
@@ -192,7 +183,6 @@ function ProgressRing({ pct, size = 96, stroke = 8 }: { pct: number; size?: numb
 
 export default function DashboardPage() {
   const router = useRouter();
-  const pathname = usePathname();
   const [aiQuery, setAiQuery] = useState("");
   const [tasks, setTasks] = useState(INITIAL_TASKS);
   const [quote, setQuote] = useState(DAILY_QUOTES[0]);
@@ -256,7 +246,7 @@ export default function DashboardPage() {
 
         {/* Header */}
         <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             {user?.photoURL ? (
               <img
                 src={user.photoURL}
@@ -269,9 +259,9 @@ export default function DashboardPage() {
                 {avatarLetter}
               </div>
             )}
-            <div>
+            <div className="min-w-0">
               <p className="text-gray-400 text-sm">{greeting},</p>
-              <h1 className="text-xl font-bold text-white leading-tight">
+              <h1 className="text-xl font-bold text-white leading-tight truncate">
                 {displayName}! <span>👋</span>
               </h1>
               <span className="inline-block mt-1 text-[11px] font-semibold bg-violet-600/30 text-violet-300 px-2 py-0.5 rounded-full">
@@ -280,18 +270,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              aria-label="Notifications"
-              className="relative w-9 h-9 rounded-full bg-white/8 border border-white/10 flex items-center justify-center hover:bg-white/15 transition-colors"
-            >
-              🔔
-              {NOTIFICATION_COUNT > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-violet-600 text-[10px] flex items-center justify-center font-semibold">
-                  {NOTIFICATION_COUNT}
-                </span>
-              )}
-            </button>
+          <div className="flex items-center gap-2 flex-shrink-0">
             <PremiumButton size="sm" onClick={() => router.push("/dashboard/planner")}>
               <span>+</span> Quick Add
             </PremiumButton>
@@ -462,26 +441,7 @@ export default function DashboardPage() {
         </GlassCard>
       </div>
 
-      {/* Bottom nav — mobile only */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#0d0d1a]/95 backdrop-blur-xl border-t border-white/10 z-50">
-        <div className="flex items-center justify-around px-2 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
-          {BOTTOM_NAV.map((item) => {
-            const active = pathname === item.href;
-            return (
-              <Link
-                key={item.label}
-                href={item.href}
-                className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg transition-colors ${
-                  active ? "text-violet-400" : "text-gray-500"
-                }`}
-              >
-                <span className="text-lg">{item.icon}</span>
-                <span className="text-[10px] font-medium">{item.label}</span>
-              </Link>
-            );
-          })}
-        </div>
-      </nav>
+      {/* Bottom nav is already provided globally by <MobileBottomNav /> in the dashboard layout — not duplicated here */}
 
       {/* ══════════════════════════════════════════════════════════════════
           DESKTOP LAYOUT (>= md) — original dashboard, unchanged
