@@ -198,7 +198,6 @@ export default function DashboardPage() {
     setQuote(DAILY_QUOTES[dayOfYear % DAILY_QUOTES.length]);
   }, []);
 
-  // Real logged-in user's name/photo from Firebase Auth (Google Sign-in)
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
@@ -228,66 +227,69 @@ export default function DashboardPage() {
     router.push(`/dashboard/assistant?q=${encodeURIComponent(aiQuery)}`);
   };
 
-  // Daily study goal (static placeholder — wire to real tracking data when available)
-  const STUDY_GOAL_MINUTES = 240; // 4h
-  const STUDY_DONE_MINUTES = 165; // 2h45m
+  const STUDY_GOAL_MINUTES = 240;
+  const STUDY_DONE_MINUTES = 165;
   const goalPct = Math.round((STUDY_DONE_MINUTES / STUDY_GOAL_MINUTES) * 100);
 
   const displayName = user?.name || "Hraydesh";
   const avatarLetter = (user?.name?.[0] || "H").toUpperCase();
 
   return (
-    <div className="min-h-screen w-full bg-[#0d0d1a] text-white overflow-x-hidden overscroll-y-contain">
+    <div className="min-h-screen w-full max-w-full bg-[#0d0d1a] text-white overflow-x-hidden overscroll-y-contain">
 
       {/* ══════════════════════════════════════════════════════════════════
-          MOBILE LAYOUT (< md) — compact, single column, bottom nav
+          MOBILE LAYOUT (< md)
       ══════════════════════════════════════════════════════════════════ */}
-      <div className="md:hidden p-4 space-y-5 w-full pb-24">
+      <div className="md:hidden p-4 space-y-4 w-full max-w-full overflow-x-hidden pb-24 box-border">
 
-       {/* Header */}
-<div className="flex flex-col gap-3">
-  <div className="flex items-center justify-between gap-2">
-    <div className="flex items-center gap-2.5 min-w-0 flex-1">
-      {user?.photoURL ? (
-        <img
-          src={user.photoURL}
-          alt={displayName}
-          referrerPolicy="no-referrer"
-          className="w-12 h-12 rounded-full object-cover flex-shrink-0 ring-2 ring-white/10"
-        />
-      ) : (
-        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-600 flex items-center justify-center text-lg font-bold flex-shrink-0 ring-2 ring-white/10">
-          {avatarLetter}
+        {/* Header row */}
+        <div className="flex items-center justify-between gap-2 w-full min-w-0">
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            {user?.photoURL ? (
+              <img
+                src={user.photoURL}
+                alt={displayName}
+                referrerPolicy="no-referrer"
+                className="w-11 h-11 rounded-full object-cover flex-shrink-0 ring-2 ring-white/10"
+              />
+            ) : (
+              <div className="w-11 h-11 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-600 flex items-center justify-center text-base font-bold flex-shrink-0 ring-2 ring-white/10">
+                {avatarLetter}
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="text-gray-400 text-[11px] leading-tight">{greeting},</p>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <h1 className="text-base font-bold text-white leading-tight truncate">
+                  {displayName} 👋
+                </h1>
+                <span className="shrink-0 text-[9px] font-semibold bg-violet-600/30 text-violet-300 px-1.5 py-0.5 rounded-full">
+                  Lv {USER_LEVEL}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <button className="shrink-0 relative w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 border border-white/10">
+            <span className="text-sm">🔔</span>
+          </button>
         </div>
-      )}
-      <div className="min-w-0">
-        <p className="text-gray-400 text-xs">{greeting},</p>
-        <div className="flex items-center gap-2 min-w-0">
-          <h1 className="text-lg font-bold text-white leading-tight truncate">
-            {displayName}! 👋
-          </h1>
-          <span className="shrink-0 text-[10px] font-semibold bg-violet-600/30 text-violet-300 px-1.5 py-0.5 rounded-full">
-            Lv {USER_LEVEL}
-          </span>
-        </div>
-      </div>
-    </div>
 
-    <PremiumButton size="sm" className="shrink-0 px-3 text-xs" onClick={() => router.push("/dashboard/planner")}>
-      <span>+</span> Add
-    </PremiumButton>
-  </div>
-</div>
-
-        <div className="-mt-2">
-          <p className="text-[11px] text-gray-400">Level {USER_LEVEL} · {XP_CURRENT.toLocaleString()} / {XP_NEXT_LEVEL.toLocaleString()} XP</p>
-          <div className="w-full h-1.5 bg-white/10 rounded-full mt-1 overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full" style={{ width: `${xpPct}%` }} />
+        {/* Quick Add + XP row */}
+        <div className="flex items-center gap-2 w-full min-w-0">
+          <PremiumButton size="sm" className="shrink-0 px-3 text-xs whitespace-nowrap" onClick={() => router.push("/dashboard/planner")}>
+            <span>+</span> Quick Add
+          </PremiumButton>
+          <div className="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-xl px-3 py-1.5">
+            <p className="text-[10px] text-gray-400 truncate">Level {USER_LEVEL} · {XP_CURRENT.toLocaleString()}/{XP_NEXT_LEVEL.toLocaleString()} XP</p>
+            <div className="w-full h-1 bg-white/10 rounded-full mt-1 overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full" style={{ width: `${xpPct}%` }} />
+            </div>
           </div>
         </div>
 
         {/* Stats 2x2 */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-2.5 w-full min-w-0">
           <StatCard icon="⏱️" label="Study Time" value="2h 45m" sub="↑ 28% vs yesterday" subClassName="text-green-400" />
           <StatCard icon="🔥" label="Streak" value="12 Days" sub="Keep it going!" subClassName="text-orange-400" />
           <StatCard icon="✅" label="Tasks Done" value={`${doneTasks}/${tasks.length}`} sub="Keep pushing!" subClassName="text-blue-400" />
@@ -295,14 +297,14 @@ export default function DashboardPage() {
         </div>
 
         {/* Today's Plan */}
-        <GlassCard>
+        <GlassCard className="w-full min-w-0">
           <SectionHeader title="Today's Plan" actionLabel="View All" actionHref="/dashboard/planner" />
           <div className="space-y-2.5">
             {tasks.map((t) => (
               <button
                 key={t.id}
                 onClick={() => toggleTask(t.id)}
-                className="flex items-center gap-3 w-full text-left group hover:bg-white/5 rounded-lg px-1 py-0.5 transition-colors"
+                className="flex items-center gap-3 w-full min-w-0 text-left group hover:bg-white/5 rounded-lg px-1 py-0.5 transition-colors"
               >
                 <div
                   className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${
@@ -311,7 +313,7 @@ export default function DashboardPage() {
                 >
                   {t.done && <span className="text-white text-xs">✓</span>}
                 </div>
-                <span className={`text-sm flex-1 truncate ${t.done ? "text-gray-500 line-through" : "text-gray-200"}`}>
+                <span className={`text-sm flex-1 min-w-0 truncate ${t.done ? "text-gray-500 line-through" : "text-gray-200"}`}>
                   {t.title}
                 </span>
                 <span className="text-xs text-gray-500 flex-shrink-0">{t.time}</span>
@@ -324,23 +326,23 @@ export default function DashboardPage() {
         </GlassCard>
 
         {/* Focus Shield */}
-        <GlassCard>
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div className="flex items-center gap-3 min-w-0">
+        <GlassCard className="w-full min-w-0">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2.5 min-w-0">
               <div className="w-9 h-9 rounded-xl bg-violet-600/20 flex items-center justify-center text-lg flex-shrink-0">🛡️</div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="font-semibold text-white text-sm">Focus Shield</p>
                   <span
-                    className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
+                    className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 ${
                       FOCUS_SHIELD_ON ? "bg-green-500/20 text-green-400" : "bg-white/10 text-gray-400"
                     }`}
                   >
                     {FOCUS_SHIELD_ON ? "ON" : "OFF"}
                   </span>
                 </div>
-                <p className="text-xs text-gray-500 truncate">
-                  Session: {FOCUS_SESSION_MINUTES} min · Blocking: {FOCUS_BLOCKED_APPS.join(", ")}
+                <p className="text-[11px] text-gray-500 truncate">
+                  {FOCUS_SESSION_MINUTES} min · {FOCUS_BLOCKED_APPS.join(", ")}
                 </p>
               </div>
             </div>
@@ -351,31 +353,31 @@ export default function DashboardPage() {
         </GlassCard>
 
         {/* Quick Actions */}
-        <GlassCard>
+        <GlassCard className="w-full min-w-0">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Quick Actions</p>
-          <div className="grid grid-cols-5 gap-2">
+          <div className="grid grid-cols-5 gap-1.5 w-full min-w-0">
             {MOBILE_QUICK_ACTIONS.map((q) => (
               <Link
                 key={q.label}
                 href={q.link}
-                className="flex flex-col items-center gap-1.5 p-2 rounded-xl bg-white/5 hover:bg-white/12 border border-white/10 hover:border-white/20 transition-all group text-center"
+                className="flex flex-col items-center gap-1 p-1.5 rounded-xl bg-white/5 hover:bg-white/12 border border-white/10 hover:border-white/20 transition-all group text-center min-w-0"
               >
-                <span className="text-xl">{q.icon}</span>
-                <p className="text-[10px] font-medium text-gray-300 group-hover:text-white leading-tight">{q.label}</p>
+                <span className="text-lg">{q.icon}</span>
+                <p className="text-[9px] font-medium text-gray-300 group-hover:text-white leading-tight truncate w-full">{q.label}</p>
               </Link>
             ))}
           </div>
         </GlassCard>
 
         {/* Study Progress */}
-        <GlassCard>
+        <GlassCard className="w-full min-w-0">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold text-white text-sm">Study Progress</h2>
-            <Link href="/dashboard/subjects" className="text-xs text-violet-400 hover:text-violet-300">
+            <Link href="/dashboard/subjects" className="text-xs text-violet-400 hover:text-violet-300 flex-shrink-0">
               View Details
             </Link>
           </div>
-          <div className="flex items-center gap-4 mb-4">
+          <div className="flex items-center gap-4 mb-4 min-w-0">
             <div className="relative flex items-center justify-center flex-shrink-0">
               <ProgressRing pct={EXAM_PROGRESS_PCT} />
               <span className="absolute text-base font-bold text-white">{EXAM_PROGRESS_PCT}%</span>
@@ -386,15 +388,15 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2 text-center">
-            <div>
+            <div className="min-w-0">
               <p className="text-sm font-bold text-white">{MOCK_TESTS_DONE}/{MOCK_TESTS_TOTAL}</p>
               <p className="text-[10px] text-gray-500">Mock Tests</p>
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-sm font-bold text-white">{NOTES_COUNT}</p>
               <p className="text-[10px] text-gray-500">Notes</p>
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-sm font-bold text-white">{WEAK_TOPICS_COUNT}</p>
               <p className="text-[10px] text-gray-500">Weak Topics</p>
             </div>
@@ -402,14 +404,14 @@ export default function DashboardPage() {
         </GlassCard>
 
         {/* Upcoming Revision */}
-        <GlassCard>
+        <GlassCard className="w-full min-w-0">
           <SectionHeader title="Upcoming Revision" actionLabel="View All" actionHref="/dashboard/subjects" />
           <div className="space-y-3">
             {REVISION_ALERTS.map((r) => (
               <Link
                 key={r.topic}
                 href="/dashboard/subjects"
-                className="flex items-center gap-3 p-2.5 rounded-xl bg-white/5 hover:bg-white/10 transition-colors cursor-pointer block"
+                className="flex items-center gap-3 p-2.5 rounded-xl bg-white/5 hover:bg-white/10 transition-colors cursor-pointer w-full min-w-0"
               >
                 <div
                   className="w-8 h-8 rounded-lg flex items-center justify-center text-sm flex-shrink-0"
@@ -433,7 +435,7 @@ export default function DashboardPage() {
         </GlassCard>
 
         {/* Achievements */}
-        <GlassCard>
+        <GlassCard className="w-full min-w-0">
           <SectionHeader title="Achievements" actionLabel="View All" actionHref="/dashboard/achievements" />
           <div className="space-y-3">
             {ACHIEVEMENTS_LIST.map((a) => (
@@ -443,10 +445,8 @@ export default function DashboardPage() {
         </GlassCard>
       </div>
 
-      {/* Bottom nav is already provided globally by <MobileBottomNav /> in the dashboard layout — not duplicated here */}
-
       {/* ══════════════════════════════════════════════════════════════════
-          DESKTOP LAYOUT (>= md) — original dashboard, unchanged
+          DESKTOP LAYOUT (>= md) — unchanged
       ══════════════════════════════════════════════════════════════════ */}
       <div className="hidden md:block p-6 max-w-[1400px] mx-auto space-y-5 w-full">
 
