@@ -237,7 +237,7 @@ export default function DashboardPage() {
   const avatarLetter = (user?.name?.[0] || "H").toUpperCase();
 
   return (
-    <div className="min-h-screen w-full bg-[#0d0d1a] text-white overflow-x-hidden overscroll-y-contain">
+    <div className="min-h-screen w-full max-w-full bg-[#0d0d1a] text-white overflow-x-hidden overscroll-y-contain">
 
       {/* ══════════════════════════════════════════════════════════════════
           MOBILE LAYOUT (< md) — compact, single column, bottom nav
