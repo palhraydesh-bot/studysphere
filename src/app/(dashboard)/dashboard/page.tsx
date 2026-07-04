@@ -237,45 +237,47 @@ export default function DashboardPage() {
   const avatarLetter = (user?.name?.[0] || "H").toUpperCase();
 
   return (
-    <div className="min-h-screen w-full max-w-full bg-[#0d0d1a] text-white overflow-x-hidden overscroll-y-contain">
+    <div className="min-h-screen w-full bg-[#0d0d1a] text-white overflow-x-hidden overscroll-y-contain">
 
       {/* ══════════════════════════════════════════════════════════════════
           MOBILE LAYOUT (< md) — compact, single column, bottom nav
       ══════════════════════════════════════════════════════════════════ */}
       <div className="md:hidden p-4 space-y-5 w-full pb-24">
 
-        {/* Header */}
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            {user?.photoURL ? (
-              <img
-                src={user.photoURL}
-                alt={displayName}
-                referrerPolicy="no-referrer"
-                className="w-14 h-14 rounded-full object-cover flex-shrink-0 ring-2 ring-white/10"
-              />
-            ) : (
-              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-600 flex items-center justify-center text-xl font-bold flex-shrink-0 ring-2 ring-white/10">
-                {avatarLetter}
-              </div>
-            )}
-            <div className="min-w-0">
-              <p className="text-gray-400 text-sm">{greeting},</p>
-              <h1 className="text-xl font-bold text-white leading-tight truncate">
-                {displayName}! <span>👋</span>
-              </h1>
-              <span className="inline-block mt-1 text-[11px] font-semibold bg-violet-600/30 text-violet-300 px-2 py-0.5 rounded-full">
-                Lv {USER_LEVEL}
-              </span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <PremiumButton size="sm" onClick={() => router.push("/dashboard/planner")}>
-              <span>+</span> Quick Add
-            </PremiumButton>
-          </div>
+       {/* Header */}
+<div className="flex flex-col gap-3">
+  <div className="flex items-center justify-between gap-2">
+    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+      {user?.photoURL ? (
+        <img
+          src={user.photoURL}
+          alt={displayName}
+          referrerPolicy="no-referrer"
+          className="w-12 h-12 rounded-full object-cover flex-shrink-0 ring-2 ring-white/10"
+        />
+      ) : (
+        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-600 flex items-center justify-center text-lg font-bold flex-shrink-0 ring-2 ring-white/10">
+          {avatarLetter}
         </div>
+      )}
+      <div className="min-w-0">
+        <p className="text-gray-400 text-xs">{greeting},</p>
+        <div className="flex items-center gap-2 min-w-0">
+          <h1 className="text-lg font-bold text-white leading-tight truncate">
+            {displayName}! 👋
+          </h1>
+          <span className="shrink-0 text-[10px] font-semibold bg-violet-600/30 text-violet-300 px-1.5 py-0.5 rounded-full">
+            Lv {USER_LEVEL}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <PremiumButton size="sm" className="shrink-0 px-3 text-xs" onClick={() => router.push("/dashboard/planner")}>
+      <span>+</span> Add
+    </PremiumButton>
+  </div>
+</div>
 
         <div className="-mt-2">
           <p className="text-[11px] text-gray-400">Level {USER_LEVEL} · {XP_CURRENT.toLocaleString()} / {XP_NEXT_LEVEL.toLocaleString()} XP</p>
