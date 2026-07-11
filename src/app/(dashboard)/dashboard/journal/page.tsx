@@ -10,9 +10,11 @@ import { GlassCard } from '@/components/shared/glass-card';
 import { EntryCard } from '@/components/journal/entry-card';
 import { JournalCalendar } from '@/components/journal/journal-calendar';
 import { JournalStats } from '@/components/journal/journal-stats';
+import { FolderSidebar } from '@/components/journal/folder-sidebar';
 import { useAuth } from '@/hooks/use-auth';
-import { useJournalSync } from '@/hooks/use-journal';
-import { useJournalStore, filterEntries } from '@/store/journal-store';
+import { useJournalSync, useFolderSync } from '@/hooks/use-journal';
+import { useJournalStore, filterEntries, filterEntriesByFolder } from '@/store/journal-store';
+import { useJournalFolderStore } from '@/store/journal-folder-store';
 import { createEntry, updateEntry } from '@/lib/journal/journal-service';
 import { summarizeJournal } from '@/lib/journal/stats';
 import type { Mood } from '@/lib/firestore/journal-schema';
@@ -27,15 +29,24 @@ const QUICK_ACTIONS = [
 
 export default function JournalPage() {
   useJournalSync();
+  useFolderSync();
   const router = useRouter();
   const { user } = useAuth();
   const { entries, loading, search, setSearch } = useJournalStore();
-  const visible = filterEntries(entries, search);
+  const { activeFolderId, folders } = useJournalFolderStore();
+
+  const byFolder = filterEntriesByFolder(entries, activeFolderId);
+  const visible = filterEntries(byFolder, search);
   const stats = summarizeJournal(entries);
+
+  const activeFolder = typeof activeFolderId === 'string' && activeFolderId !== 'unfiled'
+    ? folders.find((f) => f.id === activeFolderId) ?? null
+    : null;
+  const activeFolderLabel = activeFolderId === 'unfiled' ? 'Unfiled' : activeFolder?.name ?? null;
+  const activeRealFolderId = activeFolder?.id ?? null;
 
   const [todayMood, setTodayMood] = useState<Mood | null>(null);
 
-  // Today ki entry se mood load karo
   useEffect(() => {
     const today = new Date().toISOString().slice(0, 10);
     const todayEntry = entries.find((e) => e.date === today);
@@ -49,6 +60,7 @@ export default function JournalPage() {
       const id = await createEntry(user.uid, {
         date: today, title: '', content: '', mood: null,
         gratitude: [], reflection: '', locked: false,
+        folderId: activeRealFolderId,
       });
       router.push(`/dashboard/journal/${id}`);
     } catch {
@@ -68,6 +80,7 @@ export default function JournalPage() {
         await createEntry(user.uid, {
           date: today, title: '', content: '', mood,
           gratitude: [], reflection: '', locked: false,
+          folderId: null,
         });
       }
       toast.success('Mood saved!');
@@ -78,25 +91,23 @@ export default function JournalPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Journal</h1>
           <p className="text-sm text-muted-foreground">Reflect daily, grow consistently.</p>
         </div>
         <Button variant="gradient" onClick={newEntry}>
-          <Plus className="h-4 w-4 mr-1" /> New Entry
+          <Plus className="h-4 w-4 mr-1" />
+          {activeFolderLabel ? `New Entry in ${activeFolderLabel}` : 'New Entry'}
         </Button>
       </div>
 
-      {/* Stats — Today's Mood + Streak + Mood Mix */}
       <JournalStats
         stats={stats}
         todayMood={todayMood}
         onMoodSelect={handleMoodSelect}
       />
 
-      {/* Quick Actions */}
       <GlassCard>
         <h2 className="font-semibold mb-3">Quick Actions</h2>
         <div className="grid grid-cols-4 gap-2">
@@ -118,7 +129,6 @@ export default function JournalPage() {
         </div>
       </GlassCard>
 
-      {/* Main Grid */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
           <div className="flex items-center justify-between">
@@ -132,7 +142,11 @@ export default function JournalPage() {
           {loading && <p className="text-sm text-muted-foreground">Loading entries...</p>}
           {!loading && visible.length === 0 && (
             <p className="text-sm text-muted-foreground">
-              {search ? 'No matching entries.' : 'No entries yet. Start journaling!'}
+              {search
+                ? 'No matching entries.'
+                : activeFolderId !== null
+                  ? 'No entries in this folder yet.'
+                  : 'No entries yet. Start journaling!'}
             </p>
           )}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -141,6 +155,7 @@ export default function JournalPage() {
         </div>
 
         <div className="space-y-4">
+          <FolderSidebar />
           <GlassCard>
             <h2 className="mb-3 font-semibold">Calendar</h2>
             <JournalCalendar entries={entries} />

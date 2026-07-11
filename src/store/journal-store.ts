@@ -27,3 +27,11 @@ export function filterEntries(entries: JournalEntry[], q: string): JournalEntry[
     return !e.locked && e.content.toLowerCase().includes(term);
   });
 }
+export function filterEntriesByFolder(
+  entries: JournalEntry[],
+  folderId: string | null | 'unfiled'
+): JournalEntry[] {
+  if (folderId === null) return entries;
+  if (folderId === 'unfiled') return entries.filter((e) => !e.folderId);
+  return entries.filter((e) => e.folderId === folderId);
+}
