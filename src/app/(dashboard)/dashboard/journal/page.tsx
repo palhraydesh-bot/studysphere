@@ -1,5 +1,4 @@
 'use client';
-
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, Search } from 'lucide-react';
@@ -12,9 +11,16 @@ import { JournalCalendar } from '@/components/journal/journal-calendar';
 import { JournalStats } from '@/components/journal/journal-stats';
 import { FolderSidebar } from '@/components/journal/folder-sidebar';
 import { FolderEmptyState } from '@/components/journal/folder-empty-state';
+import { ArchiveFilterToggle } from '@/components/journal/archive-filter-toggle';
+import { BulkArchiveBar } from '@/components/journal/bulk-archive-bar';
 import { useAuth } from '@/hooks/use-auth';
 import { useJournalSync, useFolderSync } from '@/hooks/use-journal';
-import { useJournalStore, filterEntries, filterEntriesByFolder } from '@/store/journal-store';
+import {
+  useJournalStore,
+  filterEntries,
+  filterEntriesByFolder,
+  filterEntriesByArchiveStatus,
+} from '@/store/journal-store';
 import { useJournalFolderStore } from '@/store/journal-folder-store';
 import { createEntry, updateEntry } from '@/lib/journal/journal-service';
 import { summarizeJournal } from '@/lib/journal/stats';
@@ -26,6 +32,7 @@ const QUICK_ACTIONS = [
   { label: 'Planner', icon: '📅', href: '/dashboard/planner' },
   { label: 'Pomodoro', icon: '⏱️', href: '/dashboard/pomodoro' },
   { label: 'AI Assistant', icon: '🤖', href: '/dashboard/assistant' },
+  { label: 'Insights', icon: '📊', href: '/dashboard/journal/insights' },
 ];
 
 export default function JournalPage() {
@@ -33,11 +40,12 @@ export default function JournalPage() {
   useFolderSync();
   const router = useRouter();
   const { user } = useAuth();
-  const { entries, loading, search, setSearch } = useJournalStore();
+  const { entries, loading, search, setSearch, archiveFilter } = useJournalStore();
   const { activeFolderId, folders } = useJournalFolderStore();
 
   const byFolder = filterEntriesByFolder(entries, activeFolderId);
-  const visible = filterEntries(byFolder, search);
+  const byArchive = filterEntriesByArchiveStatus(byFolder, archiveFilter);
+  const visible = filterEntries(byArchive, search);
   const stats = summarizeJournal(entries);
 
   const activeFolder = typeof activeFolderId === 'string' && activeFolderId !== 'unfiled'
@@ -132,12 +140,15 @@ export default function JournalPage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="font-semibold">Recent Entries</h2>
-            <div className="relative max-w-xs">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input value={search} onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search entries..." className="pl-9" />
+            <div className="flex flex-wrap items-center gap-2">
+              <ArchiveFilterToggle />
+              <div className="relative max-w-xs">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input value={search} onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search entries..." className="pl-9" />
+              </div>
             </div>
           </div>
           {loading && <p className="text-sm text-muted-foreground">Loading entries...</p>}
@@ -163,6 +174,8 @@ export default function JournalPage() {
           </GlassCard>
         </div>
       </div>
+
+      <BulkArchiveBar selectedIds={[]} onDone={() => {}} />
     </div>
   );
 }

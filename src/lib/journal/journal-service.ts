@@ -1,3 +1,4 @@
+import { getWeekKey, getMonthKey } from '@/lib/journal/date-keys';
 import {
   addDoc, collection, deleteDoc, doc, getDoc, getDocs, increment, onSnapshot,
   orderBy, query, runTransaction, serverTimestamp, updateDoc, where, writeBatch
@@ -29,6 +30,8 @@ export async function getEntry(uid: string, entryId: string): Promise<JournalEnt
 }
 
 export async function createEntry(uid: string, data: NewJournalEntry): Promise<string> {
+  const weekKey = getWeekKey(data.date);
+const monthKey = getMonthKey(data.date);
   const entryRef = doc(entriesCol(uid));
   const folderId = data.folderId ?? null;
 
@@ -36,7 +39,7 @@ export async function createEntry(uid: string, data: NewJournalEntry): Promise<s
     if (folderId) {
       tx.update(doc(foldersCol(uid), folderId), { entryCount: increment(1) });
     }
-    tx.set(entryRef, { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+    tx.set(entryRef, { ...data, weekKey, monthKey, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
   });
 
   return entryRef.id;
@@ -148,4 +151,14 @@ export async function bulkArchiveEntries(uid: string, entryIds: string[]): Promi
     });
   });
   await batch.commit();
+}export async function getEntriesForWeek(uid: string, weekKey: string): Promise<JournalEntry[]> {
+  const q = query(entriesCol(uid), where('weekKey', '==', weekKey));
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as JournalEntry);
+}
+
+export async function getEntriesForMonth(uid: string, monthKey: string): Promise<JournalEntry[]> {
+  const q = query(entriesCol(uid), where('monthKey', '==', monthKey));
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as JournalEntry);
 }
