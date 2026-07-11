@@ -11,6 +11,7 @@ import { EntryCard } from '@/components/journal/entry-card';
 import { JournalCalendar } from '@/components/journal/journal-calendar';
 import { JournalStats } from '@/components/journal/journal-stats';
 import { FolderSidebar } from '@/components/journal/folder-sidebar';
+import { FolderEmptyState } from '@/components/journal/folder-empty-state';
 import { useAuth } from '@/hooks/use-auth';
 import { useJournalSync, useFolderSync } from '@/hooks/use-journal';
 import { useJournalStore, filterEntries, filterEntriesByFolder } from '@/store/journal-store';
@@ -141,13 +142,13 @@ export default function JournalPage() {
           </div>
           {loading && <p className="text-sm text-muted-foreground">Loading entries...</p>}
           {!loading && visible.length === 0 && (
-            <p className="text-sm text-muted-foreground">
-              {search
-                ? 'No matching entries.'
-                : activeFolderId !== null
-                  ? 'No entries in this folder yet.'
-                  : 'No entries yet. Start journaling!'}
-            </p>
+            search ? (
+              <p className="text-sm text-muted-foreground">No matching entries.</p>
+            ) : activeFolderId !== null ? (
+              <FolderEmptyState folderName={activeFolderLabel ?? 'this folder'} onCreateEntry={newEntry} />
+            ) : (
+              <p className="text-sm text-muted-foreground">No entries yet. Start journaling!</p>
+            )
           )}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {visible.map((e, i) => <EntryCard key={e.id} entry={e} delay={i * 0.03} />)}

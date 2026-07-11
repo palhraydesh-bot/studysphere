@@ -27,6 +27,8 @@ export interface JournalEntry {
   salt?: string;
   iv?: string;
   folderId?: string | null;
+  archived?: boolean;
+  archivedAt?: Timestamp | null;
   createdAt: Timestamp | null;
   updatedAt: Timestamp | null;
 }

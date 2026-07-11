@@ -18,10 +18,6 @@ function foldersCol(uid: string) {
   return collection(db, COLLECTIONS.users, uid, JOURNAL_COLLECTIONS.journalFolders);
 }
 
-// ---------------------------------------------------------------------------
-// Journal Entries
-// ---------------------------------------------------------------------------
-
 export function subscribeEntries(uid: string, cb: (entries: JournalEntry[]) => void) {
   const q = query(entriesCol(uid), orderBy('date', 'desc'));
   return onSnapshot(q, (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as JournalEntry)));
@@ -64,10 +60,6 @@ export async function deleteEntry(uid: string, entryId: string) {
     tx.delete(entryRef);
   });
 }
-
-// ---------------------------------------------------------------------------
-// Journal Folders
-// ---------------------------------------------------------------------------
 
 export function subscribeFolders(uid: string, cb: (folders: JournalFolder[]) => void) {
   const q = query(foldersCol(uid), orderBy('order', 'asc'));
@@ -128,6 +120,32 @@ export async function reorderFolders(uid: string, orderedFolderIds: string[]): P
   const batch = writeBatch(db);
   orderedFolderIds.forEach((folderId, index) => {
     batch.update(doc(foldersCol(uid), folderId), { order: index, updatedAt: serverTimestamp() });
+  });
+  await batch.commit();
+}export async function archiveEntry(uid: string, entryId: string): Promise<void> {
+  await updateDoc(doc(entriesCol(uid), entryId), {
+    archived: true,
+    archivedAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function restoreEntry(uid: string, entryId: string): Promise<void> {
+  await updateDoc(doc(entriesCol(uid), entryId), {
+    archived: false,
+    archivedAt: null,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function bulkArchiveEntries(uid: string, entryIds: string[]): Promise<void> {
+  const batch = writeBatch(db);
+  entryIds.forEach((entryId) => {
+    batch.update(doc(entriesCol(uid), entryId), {
+      archived: true,
+      archivedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
   });
   await batch.commit();
 }
